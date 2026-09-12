@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
 import { AuthWordmark } from "@/components/ui/Brand";
 import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
 import { Field } from "@/components/auth/Field";
 import { LockIcon, MailIcon } from "@/components/ui/Icons";
+import { PixelHeadline } from "@/components/ui/pixel-rocket-voyager";
 
 /**
  * Log in — presentational for now.
@@ -26,17 +28,13 @@ export default function LoginPage() {
           e.preventDefault();
           router.push("/");
         }}
-        className="pixel-frame flex flex-col gap-5 p-7"
-        style={{
-          background: "rgba(18,14,46,0.9)",
-          borderColor: "var(--color-grape)",
-          boxShadow: "0 0 0 3px #0f0b2e, 0 0 26px rgba(255,63,164,0.35)",
-        }}
+        className="panel-8bit flex flex-col gap-5 p-7"
+        style={{ "--panel-accent": "var(--color-magenta)" } as CSSProperties}
       >
-        <h1 className="text-pixel text-2xl text-white">LOG IN</h1>
+        <PixelHeadline text="LOG IN" className="text-2xl" delay={0.15} />
         <Field icon={<MailIcon />} type="email" placeholder="EMAIL" autoComplete="email" required />
         <Field icon={<LockIcon />} type="password" placeholder="PASSWORD" autoComplete="current-password" required />
-        <button type="submit" className="btn-pixel btn-pink mt-1 w-full">
+        <button type="submit" className="btn-pixel btn-8bit btn-pink mt-1 w-full">
           LOG IN
         </button>
         <Link

@@ -19,6 +19,25 @@ export function anonCookieOptions() {
   };
 }
 
+/**
+ * Marks that this browser has been shown the splash, so the landing redirect
+ * fires once instead of on every visit.
+ *
+ * Not httpOnly: nothing security-sensitive rides on it, and being able to clear
+ * it from devtools makes the splash easy to re-check while styling.
+ */
+export const SEEN_COOKIE = "rpo_seen";
+
+export function seenCookieOptions() {
+  return {
+    httpOnly: false,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: ANON_COOKIE_MAX_AGE,
+  };
+}
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
