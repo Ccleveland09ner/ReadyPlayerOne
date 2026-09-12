@@ -44,3 +44,6 @@ next-env.d.ts
 
 # supabase local cache
 supabase/.temp
+
+# batch test output
+batch-results.json
