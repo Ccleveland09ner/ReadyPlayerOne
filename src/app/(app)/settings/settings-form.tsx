@@ -1,41 +1,69 @@
 "use client";
 
-import { useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
+import {
+  useActionState,
+  useState,
+  type CSSProperties,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
+import { useFormStatus } from "react-dom";
 import { GamepadIcon, UserIcon } from "@/components/ui/Icons";
 import { SubPanel } from "@/components/ui/Panel";
+import { updateProfileAction, type ProfileState } from "@/lib/auth/profile-actions";
+import type { SettingsProfile } from "@/lib/auth/session";
 
 /**
  * Screen 12 — Settings.
  *
- * Profile and Quiz Preferences are P1 and write profiles.preferences; the
- * Data & Privacy and Account sections are P2 and are presentational on purpose.
+ * Only PROFILE is backed by the schema (`profiles.username`,
+ * `profiles.display_name`) and it is wired. Quiz Preferences, Appearance,
+ * Data & Privacy and Account are P2 with nothing reading them yet, so they
+ * stay presentational and say so rather than pretending to save.
  */
-export function SettingsForm() {
+export function SettingsForm({ profile }: { profile: SettingsProfile }) {
   const [explanations, setExplanations] = useState(true);
   const [snippets, setSnippets] = useState(true);
+  const [state, formAction] = useActionState<ProfileState, FormData>(
+    updateProfileAction,
+    {},
+  );
 
   return (
     <div className="mt-6 grid gap-4 lg:grid-cols-2">
       <SubPanel title="PROFILE" icon={<UserIcon />}>
-        <div className="flex flex-col gap-3">
-          <Row label="Username">
-            <Input defaultValue="Player_Intern" />
-          </Row>
-          <Row label="Display Name">
-            <Input defaultValue="Player_Intern" />
-          </Row>
-          <Row label="Email">
-            <Input defaultValue="player@gram.edu" />
-          </Row>
-          <div className="mt-2 flex justify-end">
-            <button type="button" className="btn-pixel btn-8bit btn-gold !py-2 !text-[10px]">
-              SAVE CHANGES
-            </button>
-          </div>
-        </div>
+        {profile.userId ? (
+          <form action={formAction} className="flex flex-col gap-3">
+            <Row label="Username">
+              <Input
+                name="username"
+                defaultValue={profile.username ?? ""}
+                placeholder="player_name"
+              />
+            </Row>
+            <Row label="Display Name">
+              <Input name="displayName" defaultValue={profile.displayName} required />
+            </Row>
+            <Row label="Email">
+              {/* Changing an email is an auth flow with a confirmation round
+                  trip, not a profile write. Shown, not editable. */}
+              <Input defaultValue={profile.email ?? ""} disabled />
+            </Row>
+            {state.error ? <StatusLine tone="error">{state.error}</StatusLine> : null}
+            {state.saved ? <StatusLine tone="ok">Saved.</StatusLine> : null}
+            <div className="mt-2 flex justify-end">
+              <SaveButton />
+            </div>
+          </form>
+        ) : (
+          <p className="text-pixel text-[9px] leading-relaxed tracking-wide text-[#b7b2e6]">
+            You are playing anonymously. Runs are saved to this browser — create
+            a profile to keep them and set a display name.
+          </p>
+        )}
       </SubPanel>
 
-      <SubPanel title="QUIZ PREFERENCES" icon={<GamepadIcon />}>
+      <SubPanel title="QUIZ PREFERENCES (NOT YET SAVED)" icon={<GamepadIcon />}>
         <div className="flex flex-col gap-3">
           <Row label="Default Number of Questions">
             <Select options={["5", "10", "15", "20"]} />
@@ -180,5 +208,31 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       </span>
       <span className="text-pixel text-[10px] tracking-wide text-white">{on ? "On" : "Off"}</span>
     </button>
+  );
+}
+
+function SaveButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="btn-pixel btn-8bit btn-gold !py-2 !text-[10px] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "SAVING…" : "SAVE CHANGES"}
+    </button>
+  );
+}
+
+function StatusLine({ tone, children }: { tone: "error" | "ok"; children: ReactNode }) {
+  const color = tone === "error" ? "#ff5470" : "#4ade80";
+  return (
+    <p
+      role={tone === "error" ? "alert" : "status"}
+      className="text-pixel text-[9px] leading-relaxed tracking-wide"
+      style={{ color }}
+    >
+      {children}
+    </p>
   );
 }

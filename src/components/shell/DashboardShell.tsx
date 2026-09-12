@@ -3,6 +3,7 @@ import { SideNav } from "@/components/shell/SideNav";
 import { TopBar } from "@/components/shell/TopBar";
 import { BackgroundPixelStars } from "@/components/ui/background-pixel-stars";
 import { currentIdentity, playerTotals } from "@/lib/history";
+import { currentProfile } from "@/lib/auth/session";
 import { recentRepos } from "@/lib/quiz/read";
 
 /**
@@ -17,9 +18,10 @@ import { recentRepos } from "@/lib/quiz/read";
  */
 export async function DashboardShell({ children }: { children: ReactNode }) {
   const { anonId, userId } = await currentIdentity();
-  const [totals, repos] = await Promise.all([
+  const [totals, repos, profile] = await Promise.all([
     playerTotals(),
     recentRepos(anonId, userId),
+    currentProfile(),
   ]);
   const current = repos[0] ?? null;
   return (
@@ -35,7 +37,7 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
           <TopBar
             owner={current?.owner ?? null}
             repo={current?.repo ?? null}
-            username="Player_Intern"
+            username={profile.displayName}
             correct={totals.correct}
             quizzes={totals.quizzes}
           />

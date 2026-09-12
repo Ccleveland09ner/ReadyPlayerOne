@@ -1,9 +1,12 @@
 import { UserIcon } from "@/components/ui/Icons";
 import { Panel } from "@/components/ui/Panel";
+import { currentSettingsProfile } from "@/lib/auth/session";
 import { SettingsForm } from "./settings-form";
 
 /** Screen 12 — Settings. */
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const profile = await currentSettingsProfile();
+
   return (
     <Panel className="max-w-5xl p-5 sm:p-7">
       <div className="flex items-start gap-4">
@@ -17,7 +20,7 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
-      <SettingsForm />
+      <SettingsForm profile={profile} />
     </Panel>
   );
 }

@@ -30,15 +30,19 @@ export async function proxy(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
-  // The gate is deliberately on a cookie rather than on a session. Log in and
-  // sign up are still presentational -- they push to `/` without creating a
-  // session -- so gating on "has a Supabase user" would bounce the visitor
-  // straight back here and loop forever.
+  // Now that the auth forms really sign in, a signed-in visitor goes straight
+  // through: someone returning to a bookmarked /history in a new browser has
+  // no seen-cookie but has every right to be there, and bouncing them to a
+  // landing screen would be a bug rather than an introduction.
   //
-  // TODO (accounts, P1): once the auth forms really sign in, let a signed-in
-  // visitor through on their session and keep this cookie as the anonymous
-  // demo path's equivalent.
-  if (!seen && !isOpen) {
+  // Presence of the Supabase auth cookie is the check, not a verified session.
+  // That is deliberate and safe: this gate decides whether to show a splash
+  // screen, not whether to grant access. Every real authorisation boundary is
+  // elsewhere -- RLS on the tables, the service-role split, and the
+  // server-side identity read that scopes history and reports. Forging this
+  // cookie skips an animation and nothing else. Verifying it here would mean a
+  // network round trip to Supabase on every request the matcher touches.
+  if (!seen && !isOpen && !hasSupabaseSession(request)) {
     const url = request.nextUrl.clone();
     url.pathname = "/splash";
     url.search = "";
@@ -54,6 +58,19 @@ export async function proxy(request: NextRequest) {
   }
 
   return withAnonCookie(request, response);
+}
+
+/**
+ * Does this request carry a Supabase session cookie?
+ *
+ * `@supabase/ssr` stores the session under `sb-<project-ref>-auth-token`, and
+ * splits it across `.0`, `.1` … when it outgrows one cookie, so this matches on
+ * the prefix rather than an exact name.
+ */
+function hasSupabaseSession(request: NextRequest): boolean {
+  return request.cookies
+    .getAll()
+    .some((cookie) => /^sb-.+-auth-token(\.\d+)?$/.test(cookie.name));
 }
 
 function withAnonCookie<T extends NextResponse>(request: NextRequest, response: T): T {
