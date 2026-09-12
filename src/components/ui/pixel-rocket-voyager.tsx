@@ -8,6 +8,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { BackgroundPixelStars } from "@/components/ui/background-pixel-stars";
 import { Logo } from "@/components/ui/Brand";
 
 const HEADLINE = "READY PLAYER 1";
@@ -198,22 +199,8 @@ export function PixelVoyagerCanvas({
     // in the wrong colour space and the whole scene washes out.
     composer.addPass(new OutputPass());
 
-    // --- Starfield ---
-    const starVertices: number[] = [];
-    for (let i = 0; i < 1500; i++) {
-      starVertices.push(
-        (Math.random() - 0.5) * 100,
-        (Math.random() - 0.5) * 100,
-        (Math.random() - 0.5) * 100,
-      );
-    }
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(starVertices, 3),
-    );
-    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
-    scene.add(new THREE.Points(starGeometry, starMaterial));
+    // The starfield lives in BackgroundPixelStars behind this canvas now, so
+    // the scene holds only the rocket and its trail.
 
     // --- Pixel rocket ---
     const rocket = new THREE.Group();
@@ -356,8 +343,6 @@ export function PixelVoyagerCanvas({
       if (renderer.domElement.parentNode === mount) {
         mount.removeChild(renderer.domElement);
       }
-      starGeometry.dispose();
-      starMaterial.dispose();
       pixelGeo.dispose();
       trailGeo.dispose();
       bodyMat.dispose();
@@ -373,5 +358,14 @@ export function PixelVoyagerCanvas({
   // Fixed, not absolute: the canvas is sized to the viewport, and the sign-up
   // form is tall enough to scroll on a short window. Absolute would leave bare
   // background below the fold.
-  return <div ref={mountRef} className="fixed inset-0 z-0" aria-hidden />;
+  //
+  // The pixel stars sit at z-0 and the rocket at z-1. Both must stay
+  // non-negative: this sits inside a `relative` wrapper that paints its own
+  // background, and a negative z-index would drop behind that background.
+  return (
+    <>
+      <BackgroundPixelStars />
+      <div ref={mountRef} className="fixed inset-0 z-[1]" aria-hidden />
+    </>
+  );
 }

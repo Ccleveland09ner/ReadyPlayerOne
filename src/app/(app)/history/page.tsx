@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Arrow, BranchIcon, DocIcon, Trophy } from "@/components/ui/Icons";
 import { Pager } from "@/components/ui/Pager";
 import { Panel } from "@/components/ui/Panel";
@@ -43,8 +44,8 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
         <div className="text-right">
           <div className="text-pixel text-[9px] text-[#8fa0e6]">TOTAL QUIZZES</div>
           <div
-            className="text-pixel mt-2 inline-block rounded-lg px-4 py-2 text-xl text-white"
-            style={{ border: "2px solid rgba(74,120,255,0.5)" }}
+            className="chip-8bit text-pixel mt-2 inline-block px-4 py-2 text-xl text-white"
+            style={{ "--chip-edge": "rgba(74,120,255,0.5)" } as CSSProperties}
           >
             {total}
           </div>
@@ -52,7 +53,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-display mt-8 text-center text-base text-[#b7b2e6]">
+        <p className="text-pixel mt-8 text-center text-[10px] leading-relaxed tracking-wide text-[#b7b2e6]">
           No runs yet. Quizzes you take show up here — score, mastery and a link
           straight back into the answers. Sign in to keep them across browsers.
         </p>
@@ -74,20 +75,22 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
             {rows.map((row, i) => (
               <div
                 key={row.runId}
-                className="grid grid-cols-[40px_1fr_140px_120px_1fr_120px] items-center gap-3 rounded-lg px-2 py-3 transition hover:brightness-110"
-                style={{
-                  marginTop: 8,
-                  border: row.best ? "2px solid var(--color-gold)" : "2px solid #241f52",
-                  background: "rgba(24,20,64,0.55)",
-                }}
+                className="box-8bit grid grid-cols-[40px_1fr_140px_120px_1fr_120px] items-center gap-3 px-2 py-3 transition hover:brightness-110"
+                style={
+                  {
+                    marginTop: 8,
+                    "--box-bg": "rgba(24,20,64,0.55)",
+                    "--box-edge": row.best ? "var(--color-gold)" : "#241f52",
+                  } as CSSProperties
+                }
               >
                 <span className="text-pixel text-sm text-white">
                   {row.best ? <Trophy /> : (page - 1) * HISTORY_PAGE_SIZE + i + 1}
                 </span>
-                <span className="text-display flex items-center gap-2 text-lg font-semibold text-white">
+                <span className="text-pixel flex items-center gap-2 text-[11px] tracking-wide text-white">
                   <BranchIcon className="text-[#7c8cff]" /> {row.owner}/{row.repo}
                 </span>
-                <span className="text-display text-sm text-[#b7b2e6]">
+                <span className="text-pixel text-[10px] leading-relaxed tracking-wide text-[#b7b2e6]">
                   {dateFormat.format(new Date(row.createdAt))}
                   <br />
                   <span className="text-[#8b86c9]">
@@ -100,7 +103,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
                   <span className="text-[10px]">{row.percent}%</span>
                 </span>
                 <span
-                  className="text-display text-base font-semibold"
+                  className="text-pixel text-[11px] tracking-wide"
                   style={{ color: MASTERY_TONE_COLOR[row.masteryTone] }}
                 >
                   {row.mastery}
@@ -108,7 +111,7 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
                 {/* Finished runs open results; unfinished ones resume. */}
                 <Link
                   href={row.href}
-                  className="btn-pixel btn-gold justify-self-end !px-3 !py-2 !text-[9px]"
+                  className="btn-pixel btn-8bit btn-gold justify-self-end !px-3 !py-2 !text-[9px]"
                 >
                   VIEW <Arrow className="text-xs" />
                 </Link>

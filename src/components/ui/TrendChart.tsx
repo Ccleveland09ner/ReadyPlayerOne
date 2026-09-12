@@ -26,13 +26,13 @@ export function TrendChart({
         return (
           <g key={g}>
             <line x1={pad} y1={y} x2={w - 8} y2={y} stroke="#2c2760" strokeWidth="1" />
-            <text x={4} y={y + 3} fill="#7c8cff" fontSize="8">
+            <text x={4} y={y + 3} fill="#7c8cff" fontSize="8" fontFamily="var(--font-pixel), monospace">
               {g}
             </text>
           </g>
         );
       })}
-      <path d={path} fill="none" stroke="#a58bff" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="#a58bff" strokeWidth="2.5" strokeLinejoin="miter" strokeLinecap="square" />
       {points.map((p, i) => (
         <rect key={i} x={p[0] - 3} y={p[1] - 3} width="6" height="6" fill="#c9beff" stroke="#5b3fd6" strokeWidth="1.5" />
       ))}
@@ -43,6 +43,7 @@ export function TrendChart({
           y={h + 10}
           fill="#8fa0e6"
           fontSize="8"
+          fontFamily="var(--font-pixel), monospace"
           textAnchor="middle"
         >
           {l}

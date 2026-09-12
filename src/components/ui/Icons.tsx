@@ -83,6 +83,11 @@ export const Arrow = ({ className }: P) => (
     <path d="M4 12h14M13 6l6 6-6 6" />
   </svg>
 );
+export const LogoutIcon = ({ className }: P) => (
+  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 4H6v16h4M10 12h10M16 8l4 4-4 4" />
+  </svg>
+);
 export const Play = ({ className }: P) => (
   <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="currentColor">
     <path d="M7 5l12 7-12 7z" />

@@ -30,10 +30,10 @@ export function TopBar({
     <header className="flex flex-wrap items-center justify-between gap-4 px-3 py-4 lg:px-6">
       <button
         type="button"
-        className="pixel-panel-light flex min-w-[220px] items-center gap-3 rounded-xl px-4 py-3 text-left transition hover:brightness-105 sm:min-w-[340px]"
+        className="pixel-panel-light flex min-w-[220px] items-center gap-3 px-4 py-3 text-left transition hover:brightness-105 sm:min-w-[340px]"
       >
         <BranchIcon className="text-xl text-[#5b3fd6]" />
-        <span className="text-display text-ink flex-1 text-lg font-semibold">
+        <span className="text-pixel text-ink flex-1 text-[11px] tracking-wide">
           {repo ? (
             <>
               <span style={{ color: "#7b76ad" }}>{owner}</span> / {repo}
@@ -48,14 +48,14 @@ export function TopBar({
       <div className="flex items-center gap-3">
         <PlayerSprite size={44} />
         <div className="leading-tight">
-          <div className="text-display text-lg font-bold text-white">{username}</div>
+          <div className="text-pixel text-sm tracking-wide text-white">{username}</div>
           <div className="flex items-center gap-2">
             <span className="text-pixel text-[9px]" style={{ color: "var(--color-lilac)" }}>
               Lv. {level}
             </span>
-            <span className="hidden h-2 w-28 overflow-hidden rounded-full bg-[#2a2358] sm:block">
+            <span className="meter-8bit hidden h-2 w-28 overflow-hidden bg-[#2a2358] sm:block">
               <span
-                className="block h-full rounded-full"
+                className="block h-full"
                 style={{
                   width: `${pct}%`,
                   background: "linear-gradient(90deg,#7c5cff,#46c8ff)",

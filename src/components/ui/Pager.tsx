@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 /** Offset pagination controls for /history — `?page=n`, 10 rows per page. */
 export function Pager({
@@ -12,10 +13,16 @@ export function Pager({
 }) {
   const prev = Math.max(1, page - 1);
   const next = Math.min(pageCount, page + 1);
-  const linkClass =
-    "text-pixel rounded-md px-3 py-2 text-[10px] transition";
-  const enabled = { color: "#cfc8ff", border: "2px solid rgba(124,92,255,0.5)" };
-  const disabled = { color: "#5a5588", border: "2px solid #241f52", pointerEvents: "none" as const };
+  const linkClass = "chip-8bit text-pixel px-3 py-2 text-[10px] transition";
+  const enabled = {
+    color: "#cfc8ff",
+    "--chip-edge": "rgba(124,92,255,0.5)",
+  } as CSSProperties;
+  const disabled = {
+    color: "#5a5588",
+    "--chip-edge": "#241f52",
+    pointerEvents: "none" as const,
+  } as CSSProperties;
 
   return (
     <div className="mt-5 flex items-center justify-center gap-4">

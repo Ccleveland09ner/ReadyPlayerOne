@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Logo } from "@/components/ui/Brand";
 import {
   ChartIcon,
@@ -10,6 +10,7 @@ import {
   GamepadIcon,
   GearIcon,
   HomeIcon,
+  LogoutIcon,
 } from "@/components/ui/Icons";
 
 type NavItem = {
@@ -36,7 +37,15 @@ export function SideNav({ quizHref }: { quizHref: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="pixel-panel-dark m-3 flex shrink-0 flex-col gap-6 rounded-xl p-5 lg:m-4 lg:w-64">
+    <aside
+      className="panel-8bit m-3 flex shrink-0 flex-col gap-6 p-5 lg:m-4 lg:h-[calc(100vh-2rem)] lg:w-64"
+      style={
+        {
+          "--panel-bg": "rgba(16,13,44,0.95)",
+          "--panel-accent": "var(--color-neon-blue)",
+        } as CSSProperties
+      }
+    >
       <div className="px-1 pt-1">
         <Link href="/" aria-label="ReadyPlayerOne home">
           <Logo />
@@ -50,17 +59,17 @@ export function SideNav({ quizHref }: { quizHref: string }) {
               key={href}
               href={href === "/runs" ? quizHref : href}
               aria-current={on ? "page" : undefined}
-              className={`text-display flex items-center gap-3 rounded-lg px-4 py-3 text-lg font-semibold transition ${
+              // The stepped outline is drawn in box-shadow, so the inactive
+              // state needs no transparent border to hold the row height.
+              className={`chip-8bit text-pixel flex items-center gap-3 px-4 py-3 text-[11px] tracking-wide transition ${
                 on ? "text-white" : "text-[#b7b2e6] hover:text-white"
               }`}
               style={
-                on
-                  ? {
-                      background: "rgba(124,92,255,0.28)",
-                      border: "2px solid var(--color-grape)",
-                      boxShadow: "0 0 16px rgba(124,92,255,0.45)",
-                    }
-                  : { border: "2px solid transparent" }
+                {
+                  "--chip-bg": on ? "rgba(124,92,255,0.28)" : "transparent",
+                  "--chip-edge": on ? "var(--color-grape)" : "#2f2a63",
+                  "--chip-glow": on ? "0 0 16px rgba(124,92,255,0.45)" : "0 0 #0000",
+                } as CSSProperties
               }
             >
               <Icon className="text-[1.35rem]" />
@@ -69,6 +78,21 @@ export function SideNav({ quizHref }: { quizHref: string }) {
           );
         })}
       </nav>
+      <form action="/logout" method="POST" className="lg:mt-auto">
+        <button
+          type="submit"
+          className="chip-8bit text-pixel flex w-full items-center gap-3 px-4 py-3 text-[11px] tracking-wide text-[#ffb3c8] transition hover:text-white"
+          style={
+            {
+              "--chip-bg": "rgba(255,84,112,0.12)",
+              "--chip-edge": "#ff5470",
+            } as CSSProperties
+          }
+        >
+          <LogoutIcon className="text-[1.35rem]" />
+          Log out
+        </button>
+      </form>
     </aside>
   );
 }

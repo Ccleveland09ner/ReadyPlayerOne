@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   Arrow,
   Bulb,
@@ -41,15 +41,15 @@ export default async function ReportPage() {
         </div>
         <button
           type="button"
-          className="text-display flex items-center gap-3 rounded-lg px-4 py-2 text-base font-semibold text-white"
-          style={{ border: "2px solid rgba(74,120,255,0.5)" }}
+          className="chip-8bit text-pixel flex items-center gap-3 px-4 py-2 text-[10px] tracking-wide text-white"
+          style={{ "--chip-edge": "rgba(74,120,255,0.5)" } as CSSProperties}
         >
           All Repositories <ChevronDown className="text-[#8fa0e6]" />
         </button>
       </div>
 
       {report.quizzes === 0 ? (
-        <p className="text-display mt-8 text-center text-base text-[#b7b2e6]">
+        <p className="text-pixel mt-8 text-center text-[10px] leading-relaxed tracking-wide text-[#b7b2e6]">
           Finish a quiz and this fills in — score trend, per-topic accuracy, and
           what to read next. It needs a few runs before the chart says anything.
         </p>
@@ -78,12 +78,12 @@ export default async function ReportPage() {
               <div className="flex flex-col gap-3">
                 {report.topicAccuracy.map((t) => (
                   <div key={t.topic} className="flex items-center gap-3">
-                    <span className="text-display w-28 text-sm font-semibold text-[#cbc6f0]">
+                    <span className="text-pixel w-28 text-[10px] tracking-wide text-[#cbc6f0]">
                       {TOPIC_LABELS[t.topic]}
                     </span>
-                    <span className="h-3.5 flex-1 overflow-hidden rounded-full" style={{ background: "#241f52" }}>
+                    <span className="meter-8bit h-3.5 flex-1 overflow-hidden bg-[#241f52]">
                       <span
-                        className="block h-full rounded-full"
+                        className="block h-full"
                         style={{
                           width: `${t.pct}%`,
                           background: t.good
@@ -103,22 +103,24 @@ export default async function ReportPage() {
             <SubPanel title="RECENT ACTIVITY">
               <div className="flex flex-col gap-2">
                 {report.recent.map((r) => (
-                  <div key={r.runId} className="text-display grid grid-cols-[1fr_100px_90px_auto] items-center gap-2">
-                    <span className="truncate text-base font-semibold text-white">
+                  <div key={r.runId} className="text-pixel grid grid-cols-[1fr_100px_90px_auto] items-center gap-2 text-[10px] tracking-wide">
+                    <span className="truncate text-white">
                       ⑂ {r.owner}/{r.repo}
                     </span>
-                    <span className="text-sm text-[#8fa0e6]">
+                    <span className="text-[#8fa0e6]">
                       {dateFormat.format(new Date(r.createdAt))}
                     </span>
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-white">
                       {r.score} / {r.total} ({r.percent}%)
                     </span>
                     <span
-                      className="justify-self-end rounded-md px-2 py-1 text-xs font-semibold"
-                      style={{
-                        border: `1.5px solid ${MASTERY_TONE_COLOR[r.masteryTone]}`,
-                        color: MASTERY_TONE_COLOR[r.masteryTone],
-                      }}
+                      className="chip-8bit justify-self-end px-2 py-1 text-[9px]"
+                      style={
+                        {
+                          color: MASTERY_TONE_COLOR[r.masteryTone],
+                          "--chip-edge": MASTERY_TONE_COLOR[r.masteryTone],
+                        } as CSSProperties
+                      }
                     >
                       {r.mastery}
                     </span>
@@ -127,7 +129,7 @@ export default async function ReportPage() {
               </div>
             </SubPanel>
             <SubPanel title="INSIGHTS">
-              <ul className="text-display flex flex-col gap-3 text-sm text-[#cbc6f0]">
+              <ul className="text-pixel flex flex-col gap-3 text-[10px] leading-relaxed tracking-wide text-[#cbc6f0]">
                 {report.insights.map((insight, i) => (
                   <li key={insight} className="flex gap-3">
                     <span style={{ color: INSIGHT_COLORS[i % INSIGHT_COLORS.length] }}>
@@ -168,7 +170,15 @@ function Stat({
   valueColor?: string;
 }) {
   return (
-    <div className="rounded-xl p-4" style={{ border: "2px solid rgba(74,120,255,0.35)", background: "rgba(24,20,64,0.6)" }}>
+    <div
+      className="box-8bit p-4"
+      style={
+        {
+          "--box-bg": "rgba(24,20,64,0.6)",
+          "--box-edge": "rgba(74,120,255,0.35)",
+        } as CSSProperties
+      }
+    >
       <div className="flex items-center gap-2 text-[#8fa0e6]">
         <span className="text-xl">{icon}</span>
         <span className="text-pixel text-[8px] tracking-wide">{label}</span>
