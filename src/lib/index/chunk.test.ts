@@ -66,6 +66,35 @@ describe("splitLines", () => {
   it("treats an empty file as a single empty line", () => {
     expect(splitLines("")).toEqual([""]);
   });
+
+  it("strips NUL bytes without disturbing line numbers", () => {
+    // PostgreSQL text cannot hold U+0000, and a JSON payload carrying it is
+    // rejected with "unsupported Unicode escape sequence" -- which kills the
+    // whole insert, not just the offending chunk. Real repositories contain
+    // them; donnemartin/system-design-primer is one.
+    const NUL = "\u0000";
+    expect(splitLines(`a${NUL}b\nc`)).toEqual(["ab", "c"]);
+    expect(countLines(`a${NUL}\nb${NUL}\nc`)).toBe(3);
+    expect(splitLines(`${NUL}${NUL}`)).toEqual([""]);
+  });
+
+  it("keeps chunk spans correct for a file containing NUL bytes", () => {
+    const NUL = "\u0000";
+    const text = Array.from(
+      { length: 120 },
+      (_, i) => `line ${NUL}${i + 1}`,
+    ).join("\n");
+    const chunks = chunkFile("nulls.ts", text);
+    const lines = splitLines(text);
+
+    expect(countLines(text)).toBe(120);
+    for (const chunk of chunks) {
+      expect(chunk.content).toBe(
+        lines.slice(chunk.startLine - 1, chunk.endLine).join("\n"),
+      );
+      expect(chunk.content).not.toContain(NUL);
+    }
+  });
 });
 
 describe("chunkFile", () => {
