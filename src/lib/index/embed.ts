@@ -29,6 +29,29 @@ export class EmbeddingError extends Error {
 /** Hard ceiling per run, so a pathological repo cannot drain credits. */
 export const MAX_EMBEDDING_CALLS_PER_RUN = 40;
 
+/**
+ * Character ceiling per input.
+ *
+ * The chunker bounds chunks by LINE COUNT, which says nothing about line
+ * length: 60 lines of a markdown table or a minified-ish data blob can run far
+ * past the embedding model's 8192-token limit, and the provider rejects the
+ * whole batch with a 400 -- killing the run, not just that chunk.
+ * sindresorhus/awesome does exactly this.
+ *
+ * ~4 characters per token is the usual English rule of thumb; 24k characters
+ * leaves real headroom under 8192 tokens for code and CJK text, which tokenize
+ * worse. Only the string we EMBED is truncated -- the chunk's stored content
+ * and its line range stay exact, so citations are unaffected. The tail of an
+ * oversized chunk contributes nothing to retrieval anyway.
+ */
+export const MAX_EMBED_INPUT_CHARS = 24_000;
+
+export function truncateForEmbedding(text: string): string {
+  return text.length > MAX_EMBED_INPUT_CHARS
+    ? text.slice(0, MAX_EMBED_INPUT_CHARS)
+    : text;
+}
+
 /** Embedding providers rate-limit aggressively; three attempts is the floor. */
 const EMBED_ATTEMPTS = 3;
 
@@ -49,7 +72,7 @@ async function embedOnce(texts: string[]): Promise<number[][]> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model, input: texts }),
+      body: JSON.stringify({ model, input: texts.map(truncateForEmbedding) }),
       cache: "no-store",
     });
   } catch (cause) {
