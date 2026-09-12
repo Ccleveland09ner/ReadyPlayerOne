@@ -41,7 +41,10 @@ const check = (name, ok, detail = "") => {
 };
 
 const anonId = crypto.randomUUID();
-const cookie = `rpo_aid=${anonId}`;
+// rpo_seen is what proxy.ts uses to decide a browser has already been shown
+// the landing screen. Without it every page below 307s to /splash and the
+// assertions all fail against a redirect body rather than the screen.
+const cookie = `rpo_aid=${anonId}; rpo_seen=1`;
 const runIds = [];
 
 const get = async (path) => {
@@ -191,7 +194,7 @@ try {
   check("answer review labels uncited options", tv.includes("LOW CONFIDENCE"));
 
   // --- Isolation: another browser sees none of this -------------------------
-  const otherCookie = `rpo_aid=${crypto.randomUUID()}`;
+  const otherCookie = `rpo_aid=${crypto.randomUUID()}; rpo_seen=1`;
   const otherHistory = await fetch(`${baseUrl}/history`, {
     headers: { cookie: otherCookie },
   });
