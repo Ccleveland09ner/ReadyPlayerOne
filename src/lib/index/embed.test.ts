@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_EMBED_INPUT_CHARS,
+  isInputTooLong,
   truncateForEmbedding,
 } from "@/lib/index/embed";
 import { chunkFile } from "@/lib/index/chunk";
@@ -61,5 +62,20 @@ describe("truncateForEmbedding", () => {
     expect(chunk.startLine).toBe(1);
     expect(chunk.endLine).toBe(50);
     expect(chunk.content.length).toBeGreaterThan(MAX_EMBED_INPUT_CHARS);
+  });
+});
+
+describe("isInputTooLong", () => {
+  it("recognises the providers' too-long messages", () => {
+    expect(isInputTooLong("Invalid 'input[9]': maximum input length is 8192 tokens.")).toBe(true);
+    expect(isInputTooLong("This model's maximum context length is 8192 tokens")).toBe(true);
+    expect(isInputTooLong("Please reduce the length of your input")).toBe(true);
+  });
+
+  it("does not mistake other 400s for it", () => {
+    // Shrinking cannot fix these, so treating them as recoverable would loop.
+    expect(isInputTooLong("Incorrect API key provided")).toBe(false);
+    expect(isInputTooLong("model_not_found")).toBe(false);
+    expect(isInputTooLong("")).toBe(false);
   });
 });
