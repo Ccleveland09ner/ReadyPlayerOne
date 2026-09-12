@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { generateQuiz, type RepoMap } from "@/lib/quiz/generate";
-import { verifyCitation, type RetrievedSpan, type SnapshotFiles } from "@/lib/quiz/verify";
+import { GenerationError, generateQuiz, type RepoMap } from "@/lib/quiz/generate";
+import {
+  describeFailure,
+  verifyCitation,
+  type RetrievedSpan,
+  type SnapshotFiles,
+} from "@/lib/quiz/verify";
 import { failRun, loadRun, snapshotIdOf, updateRun } from "@/lib/runs";
 import { apiError, errorResponse } from "@/lib/api";
 import { MODEL_BUDGET, consumeBudget } from "@/lib/ratelimit";
 import { log, timed } from "@/lib/log";
 import { createServiceClient } from "@/lib/supabase/service";
-import type { QuestionOption, Topic } from "@/lib/types";
+import type { QuestionOption } from "@/lib/types";
 
 /**
  * POST /api/runs/:runId/questions -- generate the five questions.
@@ -52,23 +57,46 @@ export async function POST(
       // retry loop that has gone wrong before it bills for it.
       consumeBudget("model", MODEL_BUDGET);
 
-      const { quiz, retrievedByTopic } = await timed(
-        "generate.call",
-        { runId, attempt },
-        () => generateQuiz(snapshotId, map),
-      );
+      let quiz;
+      let retrievedByTopic;
+      try {
+        ({ quiz, retrievedByTopic } = await timed(
+          "generate.call",
+          { runId, attempt },
+          () => generateQuiz(snapshotId, map),
+        ));
+      } catch (error) {
+        // Malformed output -- wrong question count, a duplicated topic, a
+        // missing correct index -- is worth one more roll of the dice. A
+        // second failure falls through to failing the run: generic filler is
+        // worse than an error.
+        if (error instanceof GenerationError && attempt < 2) {
+          log.warn("generate.reject", { runId, attempt, error: error.message });
+          lastFailure = error.message;
+          continue;
+        }
+        throw error;
+      }
 
       let rejectedCitations = 0;
       let uncitedAnswerKey = false;
 
-      const rows = quiz.questions.map((question, orderIndex) => {
-        const retrieved: RetrievedSpan[] = (
-          retrievedByTopic[question.topic as Topic] ?? []
-        ).map((chunk) => ({
+      // Rule 3 is "the model cannot cite source it was never shown", and what
+      // it was shown is the WHOLE prompt -- every topic's excerpts go into one
+      // message. Verifying each question against only its own topic's chunks
+      // is stricter than the rule means and rejects legitimate citations: a
+      // testing question correctly citing the test script in package.json gets
+      // thrown out because package.json was retrieved under file_structure.
+      const shown: RetrievedSpan[] = Object.values(retrievedByTopic)
+        .flat()
+        .map((chunk) => ({
           filePath: chunk.file_path,
           startLine: chunk.start_line,
           endLine: chunk.end_line,
         }));
+
+      const rows = quiz.questions.map((question, orderIndex) => {
+        const retrieved = shown;
 
         const options: QuestionOption[] = question.options.map((option, i) => {
           if (!option.citation) {
@@ -82,8 +110,25 @@ export async function POST(
 
           // Stripped, not shown. A failed citation on a wrong option just
           // makes it low-confidence; on the correct one it fails the quiz.
+          //
+          // Log WHICH rule rejected it and what was cited. "A citation failed"
+          // is not actionable; "it cited test.js:1-240, span_too_wide" tells
+          // you whether to fix the prompt, the chunker or the rule.
           rejectedCitations += 1;
-          if (i === question.correctIndex) uncitedAnswerKey = true;
+          const isAnswerKey = i === question.correctIndex;
+          if (isAnswerKey) uncitedAnswerKey = true;
+
+          log.warn("generate.reject", {
+            runId,
+            attempt,
+            topic: question.topic,
+            option: option.label,
+            isAnswerKey,
+            reason: result.reason,
+            detail: describeFailure(result.reason),
+            cited: `${option.citation.path}:${option.citation.startLine}-${option.citation.endLine}`,
+          });
+
           return { ...option, citation: null, verified: false };
         });
 
