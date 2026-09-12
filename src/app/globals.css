@@ -1,26 +1,231 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Fonts are loaded by next/font in src/app/layout.tsx, which exposes
+   --font-press-start / --font-fredoka / --font-nunito. `inline` is required
+   for tokens whose values reference other CSS variables. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-pixel: var(--font-press-start), monospace;
+  --font-display: var(--font-fredoka), system-ui, sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* Synthwave / arcade palette pulled from the reference mockups */
+  --color-void: #100c26;
+  --color-room: #241b45;
+  --color-room-2: #2f2456;
+  --color-navy: #14113a;
+  --color-navy-2: #1b1748;
+
+  --color-neon-blue: #3a7bff;
+  --color-neon-cyan: #46c8ff;
+  --color-magenta: #ff3fa4;
+  --color-pink: #ff4fa3;
+  --color-grape: #7c5cff;
+  --color-grape-deep: #5b3fd6;
+
+  --color-gold: #ffc23c;
+  --color-gold-edge: #d98a24;
+  --color-lime: #4ade80;
+  --color-lime-deep: #22a05a;
+
+  --color-ink: #1c1b3a;
+  --color-parchment: #eef0f8;
+  --color-lilac: #a49ddd;
+  --color-lilac-dim: #6f68a8;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--color-void);
+  color: #e8e6ff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Pixel-art primitives ---------- */
+
+/* Hard beveled panel with an offset drop shadow, no soft blur = arcade feel */
+.pixel-frame {
+  border: 3px solid var(--color-neon-blue);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 3px var(--color-navy),
+    0 0 22px rgba(58, 123, 255, 0.55),
+    0 10px 0 rgba(0, 0, 0, 0.35);
+}
+
+.pixel-panel-light {
+  background: var(--color-parchment);
+  color: var(--color-ink);
+  border-radius: 8px;
+  border: 3px solid #c7cbe4;
+  box-shadow:
+    inset 0 0 0 3px #ffffff,
+    0 8px 0 rgba(0, 0, 0, 0.3);
+}
+
+.pixel-panel-dark {
+  background: rgba(20, 17, 58, 0.92);
+  border: 2px solid rgba(74, 120, 255, 0.55);
+  border-radius: 8px;
+}
+
+/* Chunky arcade buttons: solid fill, dark edge, hard offset shadow that
+   collapses on press */
+.btn-pixel {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  border-radius: 6px;
+  padding: 14px 22px;
+  border: 3px solid rgba(0, 0, 0, 0.55);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition:
+    transform 0.06s ease,
+    box-shadow 0.06s ease,
+    filter 0.12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  line-height: 1.4;
+}
+.btn-pixel:hover {
+  filter: brightness(1.08);
+}
+.btn-pixel:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+}
+.btn-gold {
+  background: var(--color-gold);
+  color: #2a1e05;
+  border-color: var(--color-gold-edge);
+}
+.btn-pink {
+  background: var(--color-pink);
+  color: #fff;
+  border-color: #b81f6a;
+}
+.btn-grape {
+  background: var(--color-grape);
+  color: #fff;
+  border-color: var(--color-grape-deep);
+}
+.btn-ghost {
+  background: rgba(124, 92, 255, 0.12);
+  color: #cfc8ff;
+  border-color: rgba(124, 92, 255, 0.5);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3);
+}
+.btn-ghost-light {
+  background: #e7e9f6;
+  color: var(--color-ink);
+  border-color: #b7bcda;
+}
+
+/* Pixel input fields */
+.pixel-input {
+  width: 100%;
+  background: rgba(9, 7, 26, 0.65);
+  border: 2px solid var(--color-neon-blue);
+  border-radius: 6px;
+  color: #dfe4ff;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 14px 16px;
+  outline: none;
+}
+.pixel-input::placeholder {
+  color: #6f7bc0;
+}
+.pixel-input:focus {
+  border-color: var(--color-neon-cyan);
+  box-shadow: 0 0 12px rgba(70, 200, 255, 0.5);
+}
+
+/* Neon dashed grid floor used behind auth screens */
+.grid-floor {
+  background-image:
+    linear-gradient(rgba(255, 63, 164, 0.5) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 92, 255, 0.45) 1px, transparent 1px);
+  background-size: 42px 42px;
+  transform: perspective(340px) rotateX(58deg);
+  transform-origin: bottom;
+}
+
+/* Bedroom scene ground for the dashboard shell.
+   TODO: the tech design calls for a single static room asset at
+   public/room.webp rendered behind this; these gradients are the stand-in. */
+.room-scene {
+  background:
+    radial-gradient(900px 520px at 8% 92%, rgba(255, 170, 70, 0.22), transparent 60%),
+    radial-gradient(760px 520px at 95% 20%, rgba(126, 92, 255, 0.28), transparent 62%),
+    radial-gradient(700px 500px at 88% 96%, rgba(58, 123, 255, 0.16), transparent 60%),
+    linear-gradient(180deg, #2a2150 0%, #211a44 46%, #17122f 100%);
+}
+
+.text-pixel {
+  font-family: var(--font-pixel);
+}
+.text-display {
+  font-family: var(--font-display);
+}
+
+/* Neon-pink pixel logo wordmark */
+.logo-ready {
+  font-family: var(--font-pixel);
+  background: linear-gradient(180deg, #ffd25a, #ff8a3c 55%, #ff4fa3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* Scrollbars hidden until scroll */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@keyframes blink {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  61%,
+  100% {
+    opacity: 0.25;
+  }
+}
+.animate-blink {
+  animation: blink 1.2s steps(1) infinite;
+}
+
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-in {
+  animation: float-in 0.35s ease both;
 }

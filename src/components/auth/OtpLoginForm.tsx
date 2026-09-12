@@ -1,12 +1,22 @@
 "use client";
 
+/**
+ * The starter template working email-OTP form, preserved verbatim.
+ *
+ * The mockups specify email + password, so the pixel /login and /signup screens
+ * replaced this in the shell. It is kept because it is the only code in the
+ * repo that actually talks to Supabase Auth: when accounts are built (P1), swap
+ * these two calls for signInWithPassword / signUp rather than rewriting from
+ * scratch. Unused until then.
+ */
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Step = "email" | "code";
 
-export function LoginForm() {
+export function OtpLoginForm() {
   const router = useRouter();
   const supabase = createClient();
 
