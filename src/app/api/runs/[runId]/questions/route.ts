@@ -100,6 +100,24 @@ export async function POST(
 
         const options: QuestionOption[] = question.options.map((option, i) => {
           if (!option.citation) {
+            // The model declined to ground this option. On a wrong option that
+            // is honest and fine -- it renders as low-confidence. On the ANSWER
+            // KEY it is the same failure as citing something that does not
+            // verify: the quiz would ship a correct answer with no evidence
+            // behind it, which is the one thing this product promises never to
+            // do. Treat it identically and regenerate.
+            if (i === question.correctIndex) {
+              uncitedAnswerKey = true;
+              log.warn("generate.reject", {
+                runId,
+                attempt,
+                topic: question.topic,
+                option: option.label,
+                isAnswerKey: true,
+                reason: "no_citation_offered",
+                detail: "the model returned no citation for the correct option",
+              });
+            }
             return { ...option, citation: null, verified: false };
           }
 

@@ -36,7 +36,8 @@ let passed = 0;
 let failed = 0;
 const check = (name, ok, detail = "") => {
   console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  " + detail : ""}`);
-  ok ? passed++ : failed++;
+  if (ok) passed++;
+  else failed++;
 };
 
 const anonId = crypto.randomUUID();
