@@ -33,28 +33,13 @@ export function AuthWordmark() {
         }}
         aria-hidden
       />
+      {/* Same treatment as the landing headline: white pixel type with the
+          offset magenta shadow, rather than the old magenta-and-cyan pair. */}
       <div className="relative z-10 text-center">
-        <div
-          className="text-pixel italic"
-          style={{
-            fontSize: 56,
-            color: "var(--color-magenta)",
-            textShadow: "0 0 14px rgba(255,63,164,0.7), 3px 3px 0 #6a0f3f",
-          }}
-        >
+        <div className="text-pixel pixel-shadow text-white" style={{ fontSize: 56 }}>
           READY
         </div>
-        <div
-          className="text-pixel"
-          style={{
-            fontSize: 28,
-            background: "linear-gradient(180deg,#bfe6ff,#6aa8ff 55%,#a15bff)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            color: "transparent",
-            textShadow: "0 3px 0 rgba(0,0,0,0.4)",
-          }}
-        >
+        <div className="text-pixel pixel-shadow text-white" style={{ fontSize: 28 }}>
           PLAYER 1
         </div>
       </div>

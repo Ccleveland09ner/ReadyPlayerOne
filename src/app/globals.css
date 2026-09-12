@@ -108,20 +108,26 @@ body {
   transform: translateY(4px);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
 }
+/* Each colour also publishes its edge as --btn-edge so .btn-8bit can draw the
+   outline in box-shadow. Declaring the variable alone changes nothing for
+   plain .btn-pixel users. */
 .btn-gold {
   background: var(--color-gold);
   color: #2a1e05;
   border-color: var(--color-gold-edge);
+  --btn-edge: var(--color-gold-edge);
 }
 .btn-pink {
   background: var(--color-pink);
   color: #fff;
   border-color: #b81f6a;
+  --btn-edge: #b81f6a;
 }
 .btn-grape {
   background: var(--color-grape);
   color: #fff;
   border-color: var(--color-grape-deep);
+  --btn-edge: var(--color-grape-deep);
 }
 .btn-ghost {
   background: rgba(124, 92, 255, 0.12);
@@ -133,26 +139,117 @@ body {
   background: #e7e9f6;
   color: var(--color-ink);
   border-color: #b7bcda;
+  --btn-edge: #b7bcda;
 }
 
-/* Pixel input fields */
+/* Opt-in 8-bit upgrade for .btn-pixel: square corners and a stair-stepped
+   silhouette. The four side shadows draw the outline while leaving the corners
+   cut, which is what reads as pixel art rather than rounded rectangle. Done in
+   box-shadow rather than clip-path because clip-path would also clip away the
+   hard drop shadow underneath. Must follow .btn-pixel:active to win on order. */
+.btn-8bit {
+  --edge: var(--btn-edge, rgba(0, 0, 0, 0.55));
+  border: none;
+  border-radius: 0;
+  padding: 16px 26px;
+  font-size: 13px;
+  box-shadow:
+    0 -4px 0 var(--edge),
+    0 4px 0 var(--edge),
+    -4px 0 0 var(--edge),
+    4px 0 0 var(--edge),
+    inset 4px 4px 0 rgba(255, 255, 255, 0.34),
+    inset -4px -4px 0 rgba(0, 0, 0, 0.26),
+    0 12px 0 rgba(0, 0, 0, 0.42);
+}
+.btn-8bit:active {
+  transform: translateY(8px);
+  box-shadow:
+    0 -4px 0 var(--edge),
+    0 4px 0 var(--edge),
+    -4px 0 0 var(--edge),
+    4px 0 0 var(--edge),
+    inset 4px 4px 0 rgba(255, 255, 255, 0.34),
+    inset -4px -4px 0 rgba(0, 0, 0, 0.26),
+    0 4px 0 rgba(0, 0, 0, 0.42);
+}
+
+/* Card surface for the auth forms: flat fill, square corners, the same
+   stair-stepped outline as .btn-8bit and a hard offset base with no blur.
+   --panel-accent tints the outline so each screen keeps its own colour. */
+.panel-8bit {
+  --panel-accent: var(--color-neon-blue);
+  border: none;
+  border-radius: 0;
+  background: #171040;
+  box-shadow:
+    0 -4px 0 var(--panel-accent),
+    0 4px 0 var(--panel-accent),
+    -4px 0 0 var(--panel-accent),
+    4px 0 0 var(--panel-accent),
+    inset 4px 4px 0 rgba(255, 255, 255, 0.1),
+    inset -4px -4px 0 rgba(0, 0, 0, 0.45),
+    0 14px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Pixel input fields: square, flat fill, stair-stepped outline drawn in
+   box-shadow, and a bevel that runs dark-inside so the field reads as sunken --
+   the inverse of the raised .btn-8bit. */
 .pixel-input {
+  --field-edge: var(--color-neon-blue);
   width: 100%;
-  background: rgba(9, 7, 26, 0.65);
-  border: 2px solid var(--color-neon-blue);
-  border-radius: 6px;
+  background: #0b0820;
+  border: none;
+  border-radius: 0;
   color: #dfe4ff;
   font-family: var(--font-pixel);
   font-size: 12px;
-  padding: 14px 16px;
+  padding: 15px 16px;
   outline: none;
+  box-shadow:
+    0 -3px 0 var(--field-edge),
+    0 3px 0 var(--field-edge),
+    -3px 0 0 var(--field-edge),
+    3px 0 0 var(--field-edge),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.55),
+    inset -3px -3px 0 rgba(255, 255, 255, 0.07);
 }
 .pixel-input::placeholder {
   color: #6f7bc0;
 }
+/* Focus thickens the outline as well as recolouring it, so the indicator does
+   not depend on colour alone. */
 .pixel-input:focus {
-  border-color: var(--color-neon-cyan);
-  box-shadow: 0 0 12px rgba(70, 200, 255, 0.5);
+  --field-edge: var(--color-neon-cyan);
+  box-shadow:
+    0 -5px 0 var(--field-edge),
+    0 5px 0 var(--field-edge),
+    -5px 0 0 var(--field-edge),
+    5px 0 0 var(--field-edge),
+    inset 3px 3px 0 rgba(0, 0, 0, 0.55),
+    inset -3px -3px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* The square icon block beside each field. The descendant rule wins over the
+   icons' own strokeLinecap/strokeLinejoin attributes, because CSS outranks SVG
+   presentation attributes -- so the strokes go hard-cornered here without
+   touching the shared Icons.tsx used across every other screen. */
+.icon-chip-8bit {
+  border: none;
+  border-radius: 0;
+  background: #2a1f5c;
+  box-shadow:
+    0 -3px 0 var(--color-magenta),
+    0 3px 0 var(--color-magenta),
+    -3px 0 0 var(--color-magenta),
+    3px 0 0 var(--color-magenta),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.14),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.4);
+}
+.icon-chip-8bit svg {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  shape-rendering: crispEdges;
 }
 
 /* Neon dashed grid floor used behind auth screens */
@@ -164,7 +261,6 @@ body {
   transform: perspective(340px) rotateX(58deg);
   transform-origin: bottom;
 }
-
 /* Bedroom scene ground for the dashboard shell.
    TODO: the tech design calls for a single static room asset at
    public/room.webp rendered behind this; these gradients are the stand-in. */
@@ -181,6 +277,12 @@ body {
 }
 .text-display {
   font-family: var(--font-display);
+}
+
+/* The offset magenta drop shadow the pixel headings share. Defined once so the
+   landing headline and the auth wordmark cannot drift apart. */
+.pixel-shadow {
+  text-shadow: 4px 4px 0 var(--color-magenta);
 }
 
 /* Neon-pink pixel logo wordmark */
@@ -228,4 +330,14 @@ body {
 }
 .animate-in {
   animation: float-in 0.35s ease both;
+}
+
+/* Both animations are decoration: the blink draws the eye to "click to
+   continue" and to the WORKING label, the rise is a page-load flourish.
+   Neither carries information, so both are safe to drop entirely. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink,
+  .animate-in {
+    animation: none;
+  }
 }
