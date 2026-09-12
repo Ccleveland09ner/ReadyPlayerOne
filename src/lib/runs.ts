@@ -1,8 +1,6 @@
 import "server-only";
-import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { MissingEnvError, isSupabaseConfigured } from "@/lib/env";
-import { GitHubError } from "@/lib/github";
+import { isSupabaseConfigured } from "@/lib/env";
 import type { RunStatus } from "@/lib/types";
 
 /** The run row as the pipeline reads it. */
@@ -56,28 +54,6 @@ export async function updateRun(
 /** Marks the run failed with a message the UI can show verbatim. */
 export async function failRun(runId: string, message: string): Promise<void> {
   await updateRun(runId, { status: "failed", error: message });
-}
-
-/**
- * Turns a thrown error into a response.
- *
- * Missing configuration and GitHub's own failures get their real message and
- * status -- those are actionable. Everything else is logged server-side and
- * reported generically, so an unexpected stack trace never reaches a player.
- */
-export function errorResponse(error: unknown): NextResponse {
-  if (error instanceof MissingEnvError) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  if (error instanceof GitHubError) {
-    return NextResponse.json({ error: error.message }, { status: error.status });
-  }
-  if (error instanceof Error) {
-    console.error("[pipeline]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  console.error("[pipeline] unknown error", error);
-  return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
 }
 
 /**

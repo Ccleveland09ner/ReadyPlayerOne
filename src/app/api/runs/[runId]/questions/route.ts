@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { generateQuiz, type RepoMap } from "@/lib/quiz/generate";
 import { verifyCitation, type RetrievedSpan, type SnapshotFiles } from "@/lib/quiz/verify";
-import { errorResponse, failRun, loadRun, snapshotIdOf, updateRun } from "@/lib/runs";
+import { failRun, loadRun, snapshotIdOf, updateRun } from "@/lib/runs";
+import { apiError, errorResponse } from "@/lib/api";
+import { MODEL_BUDGET, consumeBudget } from "@/lib/ratelimit";
+import { log, timed } from "@/lib/log";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { QuestionOption, Topic } from "@/lib/types";
 
@@ -23,9 +26,7 @@ export async function POST(
 
   try {
     const run = await loadRun(runId);
-    if (!run) {
-      return NextResponse.json({ error: "Run not found." }, { status: 404 });
-    }
+    if (!run) return apiError("not_found", "Run not found.");
 
     // Already generated: idempotent, so a double-tap cannot bill twice.
     const supabase = createServiceClient();
@@ -47,7 +48,15 @@ export async function POST(
     // One retry. Generic filler is worse than an error, so the second failure
     // fails the run rather than shipping something hollow.
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const { quiz, retrievedByTopic } = await generateQuiz(snapshotId, map);
+      // One generation call per quiz is the design; a budget here catches a
+      // retry loop that has gone wrong before it bills for it.
+      consumeBudget("model", MODEL_BUDGET);
+
+      const { quiz, retrievedByTopic } = await timed(
+        "generate.call",
+        { runId, attempt },
+        () => generateQuiz(snapshotId, map),
+      );
 
       let rejectedCitations = 0;
       let uncitedAnswerKey = false;
@@ -88,7 +97,10 @@ export async function POST(
         };
       });
 
+      log.info("generate.verify", { runId, attempt, rejectedCitations, uncitedAnswerKey });
+
       if (uncitedAnswerKey) {
+        log.warn("generate.reject", { runId, attempt });
         lastFailure =
           "A correct answer lost its citation to verification, so the quiz was rejected.";
         continue;
@@ -110,6 +122,13 @@ export async function POST(
         },
       });
 
+      log.info("generate.done", {
+        runId,
+        questions: rows.length,
+        rejectedCitations,
+        attempt,
+      });
+
       return NextResponse.json({
         questionCount: rows.length,
         rejectedCitations,
@@ -118,12 +137,12 @@ export async function POST(
     }
 
     await failRun(runId, lastFailure);
-    return NextResponse.json({ error: lastFailure }, { status: 422 });
+    return apiError("generation_failed", lastFailure);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Question generation failed.";
     await failRun(runId, message).catch(() => {});
-    return errorResponse(error);
+    return errorResponse(error, { runId });
   }
 }
 

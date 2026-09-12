@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { XP_PER_CORRECT, XP_PER_QUIZ } from "@/lib/progression/mastery";
 import { submitAnswerInput } from "@/lib/schemas";
-import { errorResponse, loadRun, updateRun } from "@/lib/runs";
+import { loadRun, updateRun } from "@/lib/runs";
+import { apiError, errorResponse } from "@/lib/api";
+import { log } from "@/lib/log";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { QuestionOption } from "@/lib/types";
 
@@ -32,14 +34,12 @@ export async function POST(
     const body = await request.json().catch(() => null);
     const parsed = submitAnswerInput.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Malformed answer." }, { status: 400 });
+      return apiError("bad_request", "Malformed answer.");
     }
     const { questionId, selectedIndex } = parsed.data;
 
     const run = await loadRun(runId);
-    if (!run) {
-      return NextResponse.json({ error: "Run not found." }, { status: 404 });
-    }
+    if (!run) return apiError("not_found", "Run not found.");
 
     const supabase = createServiceClient();
 
@@ -51,10 +51,7 @@ export async function POST(
       .maybeSingle();
 
     if (!question) {
-      return NextResponse.json(
-        { error: "That question is not part of this run." },
-        { status: 404 },
-      );
+      return apiError("not_found", "That question is not part of this run.");
     }
 
     const options = question.options as QuestionOption[];
@@ -152,6 +149,15 @@ export async function POST(
         : {}),
     });
 
+    log.info("answer.score", {
+      runId,
+      questionId,
+      isCorrect,
+      heartsRemaining,
+      streak,
+      runComplete,
+    });
+
     return NextResponse.json({
       isCorrect,
       correctIndex,
@@ -165,6 +171,6 @@ export async function POST(
       replayed: false,
     });
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(error, { runId });
   }
 }

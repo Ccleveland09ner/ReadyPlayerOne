@@ -9,6 +9,9 @@
  */
 
 import { env } from "@/lib/env";
+import { GITHUB_BUDGET, consumeBudget } from "@/lib/ratelimit";
+import { HttpishError, withRetry } from "@/lib/retry";
+import { log } from "@/lib/log";
 
 export type ParsedRepo = { owner: string; repo: string };
 
@@ -268,20 +271,76 @@ export function languageOf(path: string): string | null {
 // --- API calls --------------------------------------------------------------
 
 async function githubFetch(path: string): Promise<Response> {
+  // Our own outbound budget, separate from GitHub's. Keeps one instance from
+  // being the reason a shared Vercel IP gets throttled for everyone.
+  consumeBudget("github", GITHUB_BUDGET);
+
   const token = env.githubToken();
-  return fetch(`https://api.github.com${path}`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "ReadyPlayerOne",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+  return withRetry(
+    async () => {
+      let response: Response;
+      try {
+        response = await fetch(`https://api.github.com${path}`, {
+          headers: {
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "ReadyPlayerOne",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          cache: "no-store",
+        });
+      } catch (cause) {
+        throw new HttpishError(
+          `Could not reach GitHub: ${cause instanceof Error ? cause.message : String(cause)}`,
+          503,
+        );
+      }
+
+      // 403 with a zero remaining header is a rate limit, not a permission
+      // problem -- retrying a genuine 403 would be pointless, so read the
+      // header rather than guessing from the status.
+      const remaining = response.headers.get("x-ratelimit-remaining");
+      if (response.status === 403 && remaining === "0") {
+        throw new HttpishError("GitHub rate limit reached.", 429);
+      }
+      if (response.status >= 500 || response.status === 429) {
+        throw new HttpishError(`GitHub returned ${response.status}.`, response.status);
+      }
+
+      return response;
     },
-    cache: "no-store",
-  });
+    {
+      attempts: 3,
+      baseDelayMs: 500,
+      maxDelayMs: 5000,
+      onRetry: ({ attempt, delayMs, error }) =>
+        log.warn("ingest.tree", {
+          attempt,
+          delayMs,
+          path,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+    },
+  );
 }
 
 async function githubJson<T>(path: string, notFoundMessage: string): Promise<T> {
-  const response = await githubFetch(path);
+  let response: Response;
+  try {
+    response = await githubFetch(path);
+  } catch (error) {
+    // Retries exhausted. Translate to the domain error the routes map on.
+    if (error instanceof HttpishError) {
+      throw new GitHubError(
+        error.status === 429
+          ? "GitHub rate limit reached. Set a GITHUB_TOKEN and try again."
+          : error.message,
+        error.status === 429 ? 429 : 502,
+      );
+    }
+    throw error;
+  }
 
   if (response.status === 404) {
     throw new GitHubError(notFoundMessage, 404);

@@ -1,4 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { apiError, errorResponse } from "@/lib/api";
+import { log, timed } from "@/lib/log";
+import {
+  RUN_CREATE_LIMIT,
+  RUN_CREATE_WINDOW_MS,
+  clientKey,
+  rateLimit,
+} from "@/lib/ratelimit";
 import {
   MIN_SOURCE_FILES,
   fetchHeadSha,
@@ -9,7 +17,6 @@ import {
 } from "@/lib/github";
 import { requireAnonId } from "@/lib/identity";
 import { createRunInput } from "@/lib/schemas";
-import { errorResponse } from "@/lib/runs";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -25,23 +32,33 @@ import { createServiceClient } from "@/lib/supabase/service";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Creating runs is the route that costs GitHub quota and embedding
+    // credits, so it is the one that gets a per-caller limit.
+    const limit = rateLimit(
+      `runs:${clientKey(request)}`,
+      RUN_CREATE_LIMIT,
+      RUN_CREATE_WINDOW_MS,
+    );
+    if (!limit.ok) {
+      log.warn("ratelimit.block", { route: "runs", retryAfterMs: limit.retryAfterMs });
+      return apiError(
+        "rate_limited",
+        "That is a lot of repositories in a short time. Give it a minute.",
+        { retryAfterMs: limit.retryAfterMs },
+      );
+    }
+
     const body = await request.json().catch(() => null);
     const parsedBody = createRunInput.safeParse(body);
     if (!parsedBody.success) {
-      return NextResponse.json(
-        { error: "Send a repository URL." },
-        { status: 400 },
-      );
+      return apiError("bad_request", "Send a repository URL.");
     }
 
     const parsed = parseRepoUrl(parsedBody.data.repoUrl);
     if (!parsed) {
-      return NextResponse.json(
-        {
-          error:
-            "That does not look like a GitHub repository. Try https://github.com/owner/repo.",
-        },
-        { status: 400 },
+      return apiError(
+        "bad_request",
+        "That does not look like a GitHub repository. Try https://github.com/owner/repo.",
       );
     }
 
@@ -50,7 +67,9 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient();
 
     // 404 covers both private and nonexistent; fetchRepoMeta says so honestly.
-    const { defaultBranch } = await fetchRepoMeta(owner, repo);
+    const { defaultBranch } = await timed("run.create", { owner, repo }, () =>
+      fetchRepoMeta(owner, repo),
+    );
     const commitSha = await fetchHeadSha(owner, repo, defaultBranch);
 
     // Snapshot cache: reuse the chunks, but always as a NEW run for this
@@ -97,6 +116,14 @@ export async function POST(request: NextRequest) {
 
       if (error) throw new Error(`Could not create run: ${error.message}`);
 
+      log.info("run.cached", {
+        runId: run.id,
+        owner,
+        repo,
+        commitSha,
+        snapshotRunId: cached.id,
+      });
+
       return NextResponse.json({
         runId: run.id,
         owner,
@@ -107,16 +134,28 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { entries, truncated } = await fetchTree(owner, repo, commitSha);
+    const { entries, truncated } = await timed(
+      "ingest.tree",
+      { owner, repo, commitSha },
+      () => fetchTree(owner, repo, commitSha),
+    );
     const files = selectFiles(entries);
     const included = files.filter((file) => file.included);
 
+    log.info("ingest.file_skip", {
+      owner,
+      repo,
+      total: files.length,
+      included: included.length,
+      skipped: files.length - included.length,
+      treeTruncated: truncated,
+    });
+
     if (included.length < MIN_SOURCE_FILES) {
-      return NextResponse.json(
-        {
-          error: `Only ${included.length} readable source files were found in ${owner}/${repo}. That is not enough to build a quiz worth taking.`,
-        },
-        { status: 422 },
+      return apiError(
+        "repo_too_small",
+        `Only ${included.length} readable source files were found in ${owner}/${repo}. That is not enough to build a quiz worth taking.`,
+        { included: included.length, required: MIN_SOURCE_FILES },
       );
     }
 
@@ -158,6 +197,14 @@ export async function POST(request: NextRequest) {
     if (filesError) {
       throw new Error(`Could not record the file manifest: ${filesError.message}`);
     }
+
+    log.info("run.create", {
+      runId: run.id,
+      owner,
+      repo,
+      commitSha,
+      fileCount: included.length,
+    });
 
     return NextResponse.json({
       runId: run.id,

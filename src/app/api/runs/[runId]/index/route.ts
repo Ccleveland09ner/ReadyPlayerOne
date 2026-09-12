@@ -3,7 +3,9 @@ import { fetchBlob, languageOf } from "@/lib/github";
 import { chunkFile, countLines } from "@/lib/index/chunk";
 import { MAX_EMBEDDING_CALLS_PER_RUN, embedBatch } from "@/lib/index/embed";
 import { indexBatchInput } from "@/lib/schemas";
-import { errorResponse, failRun, loadRun, snapshotIdOf, updateRun } from "@/lib/runs";
+import { failRun, loadRun, snapshotIdOf, updateRun } from "@/lib/runs";
+import { apiError, errorResponse } from "@/lib/api";
+import { log, timed } from "@/lib/log";
 import { createServiceClient } from "@/lib/supabase/service";
 
 /**
@@ -30,9 +32,7 @@ export async function POST(
 
   try {
     const run = await loadRun(runId);
-    if (!run) {
-      return NextResponse.json({ error: "Run not found." }, { status: 404 });
-    }
+    if (!run) return apiError("not_found", "Run not found.");
 
     // A cached run borrows another run's chunks; there is nothing to index.
     if (run.snapshot_run_id) {
@@ -100,9 +100,10 @@ export async function POST(
         runId,
         "This repository needed more embedding calls than the per-run cap allows.",
       );
-      return NextResponse.json(
-        { error: "Embedding cap reached for this run." },
-        { status: 429 },
+      return apiError(
+        "rate_limited",
+        "This repository needed more embedding calls than the per-run cap allows.",
+        { cap: MAX_EMBEDDING_CALLS_PER_RUN },
       );
     }
 
@@ -146,10 +147,15 @@ export async function POST(
     }
 
     if (chunkRows.length > 0) {
-      const vectors = await embedBatch(
-        chunkRows.map(
-          (chunk) => `${chunk.file_path}:${chunk.start_line}\n${chunk.content}`,
-        ),
+      const vectors = await timed(
+        "embed.batch",
+        { runId, chunks: chunkRows.length },
+        () =>
+          embedBatch(
+            chunkRows.map(
+              (chunk) => `${chunk.file_path}:${chunk.start_line}\n${chunk.content}`,
+            ),
+          ),
       );
 
       const { error: insertError } = await supabase.from("chunks").insert(
@@ -200,6 +206,15 @@ export async function POST(
       },
     });
 
+    log.info("ingest.batch", {
+      runId,
+      filesIndexed: lineCounts.length,
+      filesRemaining,
+      chunkCount: chunkCount ?? 0,
+      done,
+    });
+    if (done) log.info("ingest.done", { runId, chunkCount: chunkCount ?? 0 });
+
     return NextResponse.json({
       filesIndexed: lineCounts.length,
       filesRemaining,
@@ -207,6 +222,6 @@ export async function POST(
       done,
     });
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(error, { runId });
   }
 }

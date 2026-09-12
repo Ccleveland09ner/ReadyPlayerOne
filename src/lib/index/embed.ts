@@ -1,5 +1,7 @@
 import "server-only";
-import { EMBEDDING_DIMENSIONS, env } from "@/lib/env";
+import { EMBEDDING_DIMENSIONS, MissingEnvError, env } from "@/lib/env";
+import { HttpishError, isRetryableStatus, withRetry } from "@/lib/retry";
+import { log } from "@/lib/log";
 
 /**
  * Embeddings.
@@ -15,7 +17,10 @@ import { EMBEDDING_DIMENSIONS, env } from "@/lib/env";
  */
 
 export class EmbeddingError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
     super(message);
     this.name = "EmbeddingError";
   }
@@ -24,27 +29,46 @@ export class EmbeddingError extends Error {
 /** Hard ceiling per run, so a pathological repo cannot drain credits. */
 export const MAX_EMBEDDING_CALLS_PER_RUN = 40;
 
-export async function embedBatch(texts: string[]): Promise<number[][]> {
-  if (texts.length === 0) return [];
+/** Embedding providers rate-limit aggressively; three attempts is the floor. */
+const EMBED_ATTEMPTS = 3;
 
-  const response = await fetch(`${env.embeddingBaseUrl()}/embeddings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${env.embeddingApiKey()}`,
-    },
-    body: JSON.stringify({
-      model: env.embeddingModel(),
-      input: texts,
-    }),
-    cache: "no-store",
-  });
+async function embedOnce(texts: string[]): Promise<number[][]> {
+  // Read configuration OUTSIDE the try. Inside it, a missing key would be
+  // caught below and reported as "could not reach the provider" -- sending
+  // someone to debug their network when the fix is one line of .env.local --
+  // and it would burn the whole retry budget on an error that cannot improve.
+  const baseUrl = env.embeddingBaseUrl();
+  const apiKey = env.embeddingApiKey();
+  const model = env.embeddingModel();
+
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/embeddings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, input: texts }),
+      cache: "no-store",
+    });
+  } catch (cause) {
+    // A network failure is worth retrying; surface it as such.
+    throw new HttpishError(
+      `Could not reach the embedding provider: ${cause instanceof Error ? cause.message : String(cause)}`,
+      503,
+    );
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new EmbeddingError(
-      `Embedding request failed (${response.status}). ${detail.slice(0, 200)}`,
-    );
+    const message = `Embedding request failed (${response.status}). ${detail.slice(0, 200)}`;
+    // Retryable statuses go back as HttpishError so withRetry picks them up;
+    // a 400 is a bad request that will be bad again, so it fails now.
+    if (isRetryableStatus(response.status)) {
+      throw new HttpishError(message, response.status);
+    }
+    throw new EmbeddingError(message, response.status);
   }
 
   const payload = (await response.json()) as {
@@ -69,6 +93,37 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
   }
 
   return ordered.map((item) => item.embedding);
+}
+
+export async function embedBatch(texts: string[]): Promise<number[][]> {
+  if (texts.length === 0) return [];
+
+  try {
+    return await withRetry(() => embedOnce(texts), {
+      attempts: EMBED_ATTEMPTS,
+      baseDelayMs: 500,
+      maxDelayMs: 6000,
+      onRetry: ({ attempt, delayMs, error }) =>
+        log.warn("embed.retry", {
+          attempt,
+          delayMs,
+          inputs: texts.length,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+    });
+  } catch (error) {
+    // A missing key is a configuration problem, not a transport one. Collapsing
+    // it into "could not be reached" sends people to debug their network when
+    // the answer is one line of .env.local.
+    if (error instanceof MissingEnvError) throw error;
+
+    // Collapse the transport error into the domain error the routes map on.
+    if (error instanceof EmbeddingError) throw error;
+    throw new EmbeddingError(
+      error instanceof Error ? error.message : String(error),
+      error instanceof HttpishError ? error.status : undefined,
+    );
+  }
 }
 
 export async function embedOne(text: string): Promise<number[]> {
