@@ -11,24 +11,29 @@ School grades the code you wrote. Industry grades the code you read.
 ReadyPlayerOne turns "read the repo until you feel okay" into a measurable,
 cited, repeatable exercise.
 
-## Status: skeleton
+## Status
 
-The interface is built and every screen renders. **The pipeline behind it is
-not implemented yet** — the four API routes return `501`, and the screens read
-typed placeholder data from `src/lib/mock-data.ts`.
+The pipeline works end to end against real repositories.
 
 | Layer | State |
 |---|---|
-| All 12 screens, routing, game shell | Built |
-| Mastery tiers, XP and level derivation | Built (`src/lib/progression/mastery.ts`) |
-| Repository ingestion, chunking, embeddings | Not started |
-| Question generation, citation verification | Not started |
-| Answer scoring, run persistence | Not started |
-| Accounts, anonymous-run claiming | Not started |
+| All screens, routing, game shell | Built |
+| Landing screen, 8-bit styling, sidebar logout | Built |
+| Repository ingestion, chunking, embeddings | Built |
+| Question generation, citation verification | Built |
+| Answer scoring, run persistence, history, report | Built |
+| Mastery tiers, XP and level derivation | Built |
+| Accounts (sign-up / sign-in forms) | **Server side done, forms not wired** |
 
-Anything still to be written carries its contract in a docstring at the place
-it belongs — the API stubs and the empty `src/lib/*` modules are specifications,
-not empty files.
+The auth forms at `/login` and `/signup` are still presentational — they push to
+`/` without creating a session. Everything behind them works and is tested
+(`scripts/verify-auth.mjs`): password sign-in, claiming a browser's anonymous
+runs on first sign-in, profile RLS. Wiring the two forms is the remaining step.
+
+**Verified against 50 public repositories.** 36 completed end to end on the
+first pass; the failures drove four real fixes (see
+[Known behaviour](#known-behaviour)). Answer keys carried a verified citation
+in 98% of completed runs.
 
 ## Quick start
 
@@ -37,20 +42,33 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. **No Supabase project is needed to see the UI** —
-the session-refresh proxy skips itself when credentials are absent, so every
-screen renders unconfigured. Set Supabase up when you start writing the
-pipeline, not before.
-
-The quiz flow is clickable end to end against placeholder data: `/` → paste
-anything → `/runs/demo/start` → `/runs/demo` → `/runs/demo/quiz` →
-`/runs/demo/complete` → `/runs/demo/answers`.
+Open <http://localhost:3000>. The landing screen renders with no configuration
+at all — the session-refresh guard skips itself when Supabase credentials are
+absent, and read paths return empty states rather than throwing. To run an
+actual quiz you need the keys in [Configuration](#configuration).
 
 ```bash
-npm run build     # next build
-npm run lint      # eslint
-npx tsc --noEmit  # type check (run a build first — Next generates the route types)
+npm run build          # next build
+npm run lint           # eslint
+npm test               # vitest, 104 tests
+npx tsc --noEmit       # type check (run a build first — Next generates route types)
 ```
+
+### Verification scripts
+
+These run against a live Supabase project and are the fastest way to know the
+backend is healthy. The last three spend money; the first two do not.
+
+```bash
+node scripts/verify-backend.mjs              # 22 checks: schema, RLS, cache key, vector retrieval
+node scripts/verify-auth.mjs                 # 8 checks: sign-up, sign-in, claim-on-sign-in, profile RLS
+node scripts/verify-screens.mjs <baseUrl>    # 25 checks: history, report, results, review, HUD
+node scripts/smoke-run.mjs <repo> <baseUrl>  # one repo end to end, prints every question + citation
+node scripts/batch-test.mjs <list> <baseUrl> # many repos, reports the distribution of outcomes
+```
+
+`verify-screens` seeds its own rows and deletes them; `smoke-run` and
+`batch-test` leave real runs behind.
 
 ## Structure
 
@@ -58,66 +76,73 @@ npx tsc --noEmit  # type check (run a build first — Next generates the route t
 src/
 ├── app/
 │   ├── layout.tsx                  root shell, next/font wiring
-│   ├── globals.css                 Tailwind v4 tokens + pixel primitives
+│   ├── globals.css                 palette, 8-bit primitives, pixel type
 │   │
 │   ├── (auth)/                     full-bleed, no dashboard chrome
-│   │   ├── splash/ login/ signup/
+│   │   ├── splash/                 landing — Three.js rocket hero
+│   │   ├── login/  signup/         presentational for now
 │   │
 │   ├── (app)/                      everything inside the game shell
 │   │   ├── page.tsx                Home — repo entry
 │   │   ├── history/ report/ settings/
 │   │   └── runs/[runId]/
 │   │       ├── page.tsx            Ingesting — staged progress
-│   │       ├── start/              Confirm and start
-│   │       ├── quiz/               Quiz play
-│   │       ├── complete/           Quiz Complete
-│   │       └── answers/            Answer Review + citations
+│   │       ├── start/ quiz/ complete/ answers/
 │   │
-│   └── api/runs/…                  4 pipeline endpoints (stubbed 501)
+│   └── api/runs/…                  4 pipeline endpoints
 │
 ├── components/
 │   ├── shell/   DashboardShell, SideNav, TopBar
 │   ├── quiz/    Hearts, ProgressPips, StreakPanel
-│   ├── auth/    AuthBackdrop, Field, OtpLoginForm
-│   └── ui/      Panel, Brand, Icons, MasteryBar, CitationLink, Pager, TrendChart
+│   ├── auth/    AuthBackdrop, Field, OtpLoginForm (parked)
+│   └── ui/      Panel, Brand, Icons, MasteryBar, CitationLink, Pager,
+│                TrendChart, pixel-rocket-voyager, background-pixel-stars
 │
 ├── lib/
-│   ├── types.ts                    domain shapes shared by UI and pipeline
-│   ├── mock-data.ts                placeholder content — delete as queries land
-│   ├── progression/mastery.ts      mastery tiers, XP, levels
-│   ├── schemas.ts                  Zod validation (pending)
-│   ├── github/  index/  quiz/      ingestion, retrieval, generation (pending)
-│   ├── identity/ history/          anon cookie, run queries (pending)
-│   └── supabase/                   browser + server clients
+│   ├── types.ts  schemas.ts  env.ts  runs.ts  api.ts  log.ts
+│   ├── retry.ts  ratelimit.ts
+│   ├── github/                     URL parsing, tree fetch, filtering, caps
+│   ├── index/                      chunking, embedding, retrieval
+│   ├── quiz/                       generation, citation verification, reads
+│   ├── identity/                   anon cookie, claim-on-sign-in
+│   ├── progression/                mastery tiers, XP, levels
+│   ├── history/                    run queries, report aggregate
+│   └── supabase/                   browser, server and service clients
 │
-└── proxy.ts                        session refresh (Next 16's middleware.ts)
+└── proxy.ts                        session refresh, anon cookie, landing gate
 
-docs/
-├── PRD-ReadyPlayerOne-MVP.md       product spec, features, scope
-├── TechDesign-ReadyPlayerOne-MVP.md  architecture, schema, decisions
-└── mockups/                        the ten reference screens + README
+scripts/                            verification harnesses (see above)
+supabase/
+├── migrations/                     schema + the match_chunks lockdown
+└── tests/schema-check.sql          structural assertions
+docs/                               PRD, tech design, deployment, mockups
 ```
 
 ## Routes
 
-| Route | Screen | Tier |
-|---|---|---|
-| `/` | Home — repo entry | P0 |
-| `/runs/[runId]/start` | Confirm and start | P0 |
-| `/runs/[runId]` | Ingesting — staged progress | P0 |
-| `/runs/[runId]/quiz` | Quiz — question, options, HUD | P0 |
-| `/runs/[runId]/complete` | Quiz Complete | P0 |
-| `/runs/[runId]/answers` | Answer Review | P0 |
-| `/history` | Quiz History | P0 |
-| `/report` | Reports dashboard | P1 |
-| `/settings` | Settings | P1/P2 |
-| `/splash` `/login` `/signup` | Splash and accounts | P1 |
+| Route | Screen |
+|---|---|
+| `/splash` | Landing — rocket hero, `PRESS START` |
+| `/login` `/signup` | Accounts (presentational) |
+| `/` | Home — repo entry |
+| `/runs/[runId]/start` | Confirm and start |
+| `/runs/[runId]` | Ingesting — staged progress |
+| `/runs/[runId]/quiz` | Quiz — question, options, HUD |
+| `/runs/[runId]/complete` | Quiz Complete |
+| `/runs/[runId]/answers` | Answer Review |
+| `/history` `/report` `/settings` | |
 
-`/splash` is its own route rather than the unauthenticated `/` the PRD
-describes — anonymous play is the demo path, so `/` is Home. Swapping it is a
-redirect in `proxy.ts` once accounts exist.
+**First visits are routed through the landing screen.** `proxy.ts` redirects any
+browser without the `rpo_seen` cookie to `/splash`, so the order is landing →
+log in → Home. `/splash`, `/login`, `/signup`, `/logout` and `/api` are exempt —
+`/api` deliberately, because the ingestion loop must not be redirected
+mid-run.
 
-## How it is meant to work
+The gate is on a cookie rather than a session on purpose: the auth forms do not
+create sessions yet, so gating on a Supabase user would bounce visitors back to
+the landing screen forever. Swap it when the forms are wired.
+
+## How it works
 
 The client orchestrates the pipeline, because ingesting a repository does not
 fit inside one serverless invocation:
@@ -129,13 +154,14 @@ POST /api/runs/:id/questions   one model call, five cited questions
 POST /api/runs/:id/answers     compare against the stored index — no model call
 ```
 
-Two ideas carry the product:
+Three ideas carry the product:
 
 **Citations are verified mechanically, at generation time.** A citation survives
-only if its path is in the snapshot, its line range is in bounds, its span
-overlaps a chunk the model was actually shown, and it is under 80 lines. A
-question whose correct option loses its citation is regenerated, then fails the
-run. Nothing ever displays an unverified citation, in any failure mode.
+only if its path is in the ingested snapshot, its line range is in bounds, its
+span overlaps a chunk the model was actually shown, and it is under 80 lines. If
+the *correct* option's citation fails — or the model declines to give one — the
+quiz is regenerated, then the run fails. Nothing ever ships an answer key
+without evidence behind it.
 
 **Everything after generation is deterministic.** Scoring, hearts, streaks, XP,
 mastery tiers and every number on the report — including the insight sentences —
@@ -146,58 +172,90 @@ embeddings and one structured generation call.
 finished quiz, 100 per level, recomputed from the answer rows. Deleting a run
 corrects every total for free.
 
+## Configuration
+
+`cp .env.example .env.local` and fill it in. Full table, Vercel mapping and
+Supabase setup: [docs/BACKEND-DEPLOYMENT.md](./docs/BACKEND-DEPLOYMENT.md).
+
+| Variable | Needed for |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` / `..._ANON_KEY` | Session refresh |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Every write |
+| `GITHUB_TOKEN` | Ingestion at any real rate |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | Question generation |
+| `EMBEDDING_API_KEY` / `..._BASE_URL` / `..._MODEL` | Indexing |
+
+Anthropic serves no embeddings endpoint, so embeddings are a second provider.
+The default model outputs 1536 dimensions to match `chunks.embedding`; changing
+provider or model means migrating that column, and `embedBatch` asserts the
+dimension rather than trusting it.
+
+```bash
+npx supabase link --project-ref <ref>
+npx supabase db push --linked --dry-run
+npx supabase db push --linked
+node scripts/verify-backend.mjs
+```
+
+## Known behaviour
+
+Found by running against 50 real repositories, and worth knowing before you
+hit them again:
+
+- **A repository with fewer than 5 readable source files is rejected.** Most
+  single-README "awesome list" repos fail this way. It is the cap working, not
+  a bug.
+- **NUL bytes are stripped before storage.** PostgreSQL `text` cannot hold
+  U+0000 and rejects the whole insert; one stray null byte used to kill a run.
+- **Embedding inputs are capped and shrink on rejection.** The chunker bounds
+  chunks by line *count*, which says nothing about line *length* — link-dense
+  markdown blew past the model's token limit. A character cap is a guess, so
+  the batch halves and retries when the provider says it is still too long.
+- **A single-README repository may fail generation.** With nothing structural
+  to retrieve, the model guesses `README.md:1-10` and verification correctly
+  refuses it. Pinning the README's opening chunk into every topic's grounding
+  would fix this.
+- **Generation runs ~30s**, above the 20s target in the PRD. It sits behind the
+  progress screen, so it is visible but not fatal.
+
 ## Design
 
 The ten mockups in [`docs/mockups/`](./docs/mockups/) are the spec — where they
-and the written docs disagree, **the mockups win**. Their README maps each
-screen to its route and records where the implementation deliberately differs.
+and the written docs disagree, the mockups win. Their README maps each screen to
+its route and records where the implementation deliberately differs.
 
-The palette, the pixel panel/button/input primitives and the three fonts live in
-`src/app/globals.css`. Change a color there, not in a component. Fonts load
-through `next/font` (Press Start 2P for display and HUD, Fredoka for headings,
-Nunito for body) and feed Tailwind v4 theme tokens.
+The palette, the pixel type and the 8-bit primitives live in
+`src/app/globals.css`. Change a colour there, not in a component. The primitives
+draw their stepped edges with layered `box-shadow` and zero border radius, and
+take per-instance colours through CSS custom properties:
 
-Two accessibility traps worth remembering: pixel fonts at small sizes and
-neon-on-dark both fail contrast easily. Body copy stays at a normal size, and
-every pairing gets checked at AA before a styling pass is called done.
+```tsx
+<div className="box-8bit" style={{ "--box-edge": "#3a7bff" } as CSSProperties}>
+```
+
+`.panel-8bit`, `.box-8bit`, `.chip-8bit`, `.meter-8bit`, `.btn-8bit`.
+
+Two canvas components back the atmosphere: `pixel-rocket-voyager` (Three.js,
+landing only) and `background-pixel-stars` (2D canvas, behind the shell). Both
+are decorative — they fall back to static rendering under
+`prefers-reduced-motion`, the hero survives a missing WebGL context, and both
+dispose their resources on unmount.
 
 ## Conventions
 
-- **Components** are `PascalCase.tsx` under `src/components/`; page-scoped client
-  components are kebab-case and colocated with their route (`quiz-player.tsx`).
+- **Components** are `PascalCase.tsx` under `src/components/`; page-scoped
+  client components are kebab-case and colocated with their route.
 - **Pages stay server components** where they can; interactivity goes in a
-  colocated client component so the page can start querying the database without
-  a rewrite.
+  colocated client component.
 - **Snapshot indirection:** a cached or retaken run points at another run's
   chunks, so every query against `chunks` or `repo_files` must resolve through
-  `effectiveSnapshotId()` in `src/lib/index/`, never `run.id`.
-- **Mastery thresholds live in exactly one place** — `src/lib/progression/mastery.ts`.
-  Three copies of the table is how the screens end up disagreeing.
-
-## Supabase setup
-
-Needed once you start on the pipeline, not to run the UI.
-
-1. Create your own project at [supabase.com/dashboard](https://supabase.com/dashboard)
-   (Free plan). Every team member does **not** share one.
-2. `cp .env.example .env.local`, then fill the three values from
-   **Settings → API**: project URL, `anon` key, and the `service_role` key —
-   which is secret, server-only, and never committed.
-3. Enable the `vector` extension and apply migrations:
-   ```bash
-   npx supabase login
-   npx supabase link --project-ref <your-project-ref>
-   npx supabase db push --linked
-   ```
-4. A `GITHUB_TOKEN` (classic, no scopes) is strongly recommended before
-   deploying — unauthenticated GitHub API limits are per-IP, and on Vercel that
-   IP is shared.
-
-The starter template's `todos` table and its wide-open RLS policies are still in
-`supabase/migrations/` and should be dropped in the first real migration. The
-template's working email-OTP form is parked, unused, at
-`src/components/auth/OtpLoginForm.tsx`; the pixel login and signup screens are
-presentational until password auth is wired.
+  `snapshotIdOf()`, never `run.id`.
+- **Mastery thresholds live in exactly one place** —
+  `src/lib/progression/mastery.ts`. Three copies is how the screens end up
+  disagreeing.
+- **The answer key never reaches the browser.** `loadQuizForPlay` strips
+  `correct_index` and every explanation; the answer route returns them on
+  submit.
 
 ## Working with an AI agent
 
@@ -209,13 +267,15 @@ opens a PR, instead of editing your main checkout directly.
 
 ## Deploying
 
-Vercel, free tier. Set the same environment variables from `.env.local` in the
-project dashboard. Deploy early — at hour 4, before there is anything to demo —
-rather than discovering deployment bugs at hour 20.
+Vercel, free tier. Set the same environment variables in the project dashboard.
+Deploy early rather than discovering deployment bugs at hour 20. Warm the demo
+repositories on production so the snapshot cache is populated and the demo
+starts in seconds.
 
 ## Reference
 
 - [PRD](./docs/PRD-ReadyPlayerOne-MVP.md) — features, scope, acceptance criteria
 - [Technical design](./docs/TechDesign-ReadyPlayerOne-MVP.md) — schema, decisions, build sequence
+- [Backend deployment](./docs/BACKEND-DEPLOYMENT.md) — env mapping, Supabase setup, error codes, cold start
 - [Mockups](./docs/mockups/) — the ten reference screens
 - [Next.js docs](https://nextjs.org/docs) · [Supabase docs](https://supabase.com/docs)

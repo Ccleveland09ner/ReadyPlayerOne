@@ -15,7 +15,7 @@ Numbered in flow order, not in the order they were exported.
 
 | File | Screen | Route | Tier |
 |---|---|---|---|
-| `01-splash.jpeg` | Splash — "click to continue" | `/splash` | P1 |
+| `01-splash.jpeg` | Splash — "click to continue" | `/splash` | P1 · **superseded**, see below |
 | `02-login.jpeg` | Log In — email + password | `/login` | P1 |
 | `03-signup-create-profile.jpeg` | Create Profile | `/signup` | P1 |
 | `04-home-repo-entry.jpeg` | Home — "Would you kindly…?" | `/` | P0 |
@@ -36,6 +36,22 @@ were. They are not filler:
   (fetching → indexing → generating) rather than spinning.
 - Answer Review is where the citation pipeline becomes visible. Without it, the
   verification work that separates this from a trivia generator is invisible.
+
+## The landing screen replaced the splash mockup
+
+`01-splash.jpeg` shows a static "click to continue" title card. What shipped at
+`/splash` is a Three.js rocket flying through a starfield, with the wordmark,
+the product sentence and a `PRESS START` link to log in
+(`src/components/ui/pixel-rocket-voyager.tsx`).
+
+It keeps what the mockup was for -- the arcade title card that sets the tone in
+the first two seconds -- and does the job better, so the mockup is kept as the
+record of the original intent rather than as a target to match.
+
+One thing the mockup did not anticipate: first visits are now *routed* through
+this screen. `proxy.ts` redirects any browser without the `rpo_seen` cookie to
+`/splash`, so the intended landing -> log in -> Home order actually holds
+instead of depending on where someone happens to land.
 
 ## Known deviations in the implementation
 

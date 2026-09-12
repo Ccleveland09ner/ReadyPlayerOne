@@ -60,10 +60,16 @@ npx supabase db push --linked
 npx supabase migration list --linked
 ```
 
-`db push` applies both migrations in order: the starter template's `todos`
-table, then the ReadyPlayerOne schema, which drops `todos` along with its
-public read/insert policies. The `vector` extension is enabled by the
-migration; nothing needs enabling by hand in the dashboard.
+`db push` applies three migrations in order: the starter template's `todos`
+table, the ReadyPlayerOne schema (which drops `todos` along with its public
+read/insert policies), and a lockdown that revokes `match_chunks` from the
+`PUBLIC` role. The `vector` extension is enabled by the schema migration;
+nothing needs enabling by hand in the dashboard.
+
+That third migration exists because `revoke ... from anon, authenticated` reads
+like a lockdown and is not one: PostgreSQL grants `EXECUTE` on every new
+function to `PUBLIC`, so revoking from two named roles leaves the real grant
+untouched. Verified against a live project -- `anon` could still call it.
 
 ### Verifying the deployed schema
 
@@ -86,6 +92,29 @@ uses. It covers what a migration file cannot prove on its own:
 - deleting a run cascades to its chunks, questions and answers
 
 It creates rows under `owner = 'verify'` and deletes them on the way out.
+
+## Routing gate
+
+`proxy.ts` does three things on every request: refresh the Supabase session,
+mint the `rpo_aid` anonymous identity cookie, and redirect first-time visitors
+to the landing screen.
+
+Open prefixes -- reachable without the `rpo_seen` cookie:
+
+```
+/splash  /login  /signup  /logout  /api
+```
+
+**`/api` being exempt is load-bearing, not incidental.** Ingestion is a client
+orchestrated loop of `POST /api/runs/:id/index` calls; if those were gated, a
+run would be redirected to the landing screen halfway through indexing and die
+there. Anything added under `/api` inherits the exemption. Anything added
+outside it does not -- including new pages, which will 307 until the visitor has
+seen the landing screen.
+
+Server-side callers that fetch *pages* need the cookie. `scripts/verify-screens.mjs`
+sends `rpo_aid=<uuid>; rpo_seen=1` for exactly this reason; without it every
+assertion runs against a redirect body.
 
 ## Cold-start behaviour
 
@@ -166,9 +195,11 @@ numbers. Nothing logs secrets or repository file contents.
 
 ## Deploy order
 
-1. Supabase project created and `db push` applied
-2. `node scripts/verify-backend.mjs` passes
-3. Environment variables set in Vercel
-4. Push to `main` → Vercel builds
-5. Warm the demo repositories on production so the snapshot cache is populated
+1. `npm install` -- the landing screen added `three`, `@types/three` and
+   `framer-motion`, so a checkout from before that commit needs a fresh install
+2. Supabase project created and `db push` applied
+3. `node scripts/verify-backend.mjs` passes
+4. Environment variables set in Vercel
+5. Push to `main` → Vercel builds
+6. Warm the demo repositories on production so the snapshot cache is populated
    and the demo starts in seconds
