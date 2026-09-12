@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { IngestStage, StageDetail } from "@/lib/types";
 
@@ -8,7 +8,7 @@ const STAGES: { id: IngestStage; label: string; detail: (s: StageDetail) => stri
   {
     id: "fetching",
     label: "FETCHING REPOSITORY",
-    detail: (s) => `${s.filesTotal} files found, ${s.skipped} skipped`,
+    detail: (s) => `${s.filesTotal} files kept, ${s.skipped} skipped`,
   },
   {
     id: "indexing",
@@ -26,46 +26,107 @@ const STAGES: { id: IngestStage; label: string; detail: (s: StageDetail) => stri
  * Screen 6 — the only screen a judge waits on, so it reports what it is doing
  * rather than spinning.
  *
- * TODO: replace the simulated ticker with the real client-orchestrated loop —
- * POST /api/runs/:id/index until filesRemaining is 0, then POST
- * /api/runs/:id/questions, rendering stage_detail from each response.
+ * The client is the orchestrator. It loops POST /api/runs/:id/index until the
+ * server reports the queue is drained, then calls /questions once. This exists
+ * for one hard reason: serverless functions have an execution ceiling and
+ * ingesting a repo does not fit inside it. Batching per request also gives
+ * this screen something real to display.
+ *
+ * Navigating away abandons the run. Acceptable — ingestion is under 90
+ * seconds and this screen gives you a reason to stay.
  */
-export function IngestProgress({ runId }: { runId: string }) {
+export function IngestProgress({
+  runId,
+  initial,
+}: {
+  runId: string;
+  initial: StageDetail;
+}) {
   const router = useRouter();
-  const [detail, setDetail] = useState<StageDetail>({
-    stage: "fetching",
-    filesTotal: 48,
-    filesIndexed: 0,
-    chunkCount: 0,
-    skipped: 212,
-  });
+  const [detail, setDetail] = useState<StageDetail>(initial);
+  const [error, setError] = useState<string | null>(null);
+  const started = useRef(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setDetail((d) => {
-        if (d.filesIndexed >= d.filesTotal) {
-          return { ...d, stage: "generating" };
-        }
-        const filesIndexed = Math.min(d.filesTotal, d.filesIndexed + 8);
-        return {
-          ...d,
-          stage: "indexing",
-          filesIndexed,
-          chunkCount: filesIndexed * 7,
-        };
+    // React 18+ runs effects twice in development; the pipeline must not.
+    if (started.current) return;
+    started.current = true;
+
+    let cancelled = false;
+
+    async function post(path: string) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
       });
-    }, 700);
-    return () => clearInterval(timer);
-  }, []);
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.error ?? `Request failed (${response.status}).`);
+      }
+      return payload;
+    }
+
+    async function run() {
+      try {
+        // Index in batches until the queue drains. One retry per batch, then
+        // the run fails rather than hanging on this screen forever.
+        for (let guard = 0; guard < 60; guard++) {
+          if (cancelled) return;
+
+          let batch;
+          try {
+            batch = await post(`/api/runs/${runId}/index`);
+          } catch {
+            batch = await post(`/api/runs/${runId}/index`);
+          }
+
+          if (cancelled) return;
+
+          setDetail((current) => ({
+            ...current,
+            stage: batch.done ? "generating" : "indexing",
+            filesIndexed: current.filesTotal - (batch.filesRemaining ?? 0),
+            chunkCount: batch.chunkCount ?? current.chunkCount,
+          }));
+
+          if (batch.done) break;
+        }
+
+        if (cancelled) return;
+        setDetail((current) => ({ ...current, stage: "generating" }));
+
+        await post(`/api/runs/${runId}/questions`);
+        if (cancelled) return;
+
+        router.push(`/runs/${runId}/quiz`);
+        router.refresh();
+      } catch (caught) {
+        if (cancelled) return;
+        setError(
+          caught instanceof Error ? caught.message : "Ingestion failed.",
+        );
+      }
+    }
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [runId, router]);
 
   const activeIndex = STAGES.findIndex((s) => s.id === detail.stage);
+  const percent =
+    detail.filesTotal > 0
+      ? Math.round((detail.filesIndexed / detail.filesTotal) * 100)
+      : 0;
 
   return (
     <>
       <ol className="mt-8 flex flex-col gap-3">
         {STAGES.map((stage, i) => {
           const done = i < activeIndex;
-          const active = i === activeIndex;
+          const active = i === activeIndex && !error;
           return (
             <li
               key={stage.id}
@@ -94,21 +155,24 @@ export function IngestProgress({ runId }: { runId: string }) {
         <div
           className="h-full rounded-full transition-all"
           style={{
-            width: `${Math.round((detail.filesIndexed / detail.filesTotal) * 100)}%`,
+            width: `${percent}%`,
             background: "linear-gradient(90deg,#7c5cff,#46c8ff)",
           }}
         />
       </div>
 
-      <div className="mt-7 flex justify-center">
-        <button
-          type="button"
-          onClick={() => router.push(`/runs/${runId}/quiz`)}
-          className="btn-pixel btn-gold"
-        >
-          SKIP TO QUIZ (SKELETON)
-        </button>
-      </div>
+      {error ? (
+        <div className="mt-7 text-center">
+          <p className="text-display text-base font-medium text-[#ff5470]">{error}</p>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="btn-pixel btn-ghost mt-4"
+          >
+            TRY ANOTHER REPOSITORY
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

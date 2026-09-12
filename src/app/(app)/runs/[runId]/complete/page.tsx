@@ -1,26 +1,21 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { Check, Cross, Trophy } from "@/components/ui/Icons";
 import { MasteryBar } from "@/components/ui/MasteryBar";
 import { Panel, SubPanel } from "@/components/ui/Panel";
 import { percentFor } from "@/lib/progression/mastery";
 import { TOPIC_LABELS, TOPIC_ORDER } from "@/lib/types";
+import { loadResults } from "@/lib/quiz/read";
 
 /** Screen 8 — Quiz Complete. */
 export default async function CompletePage({ params }: PageProps<"/runs/[runId]/complete">) {
   const { runId } = await params;
 
-  // TODO: read this run's answers; score is count(is_correct) over question_count.
-  const breakdown = [true, true, false, true, true];
-  const score = breakdown.filter(Boolean).length;
-  const total = breakdown.length;
+  const results = await loadResults(runId);
+  if (!results) notFound();
+
+  const { score, total, breakdown, topicsPassed } = results;
   const percent = percentFor(score, total);
-  const topicsPassed: Record<string, boolean> = {
-    file_structure: true,
-    core_logic: true,
-    apis: false,
-    testing: true,
-    deployment: true,
-  };
 
   return (
     <Panel className="max-w-4xl p-6 sm:p-8">

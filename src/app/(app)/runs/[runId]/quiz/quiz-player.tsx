@@ -8,58 +8,102 @@ import { QuizRail } from "@/components/quiz/StreakPanel";
 import { Arrow, Bulb } from "@/components/ui/Icons";
 import { Panel } from "@/components/ui/Panel";
 import { levelName } from "@/lib/progression/mastery";
-import { TOPIC_LABELS, type Question } from "@/lib/types";
-
-const STARTING_HEARTS = 3;
+import { TOPIC_LABELS } from "@/lib/types";
+import type { PlayableQuestion } from "@/lib/quiz/read";
 
 /**
  * Screen 7 — one question per screen.
  *
- * TODO: POST each selection to /api/runs/:id/answers so a refresh resumes at
- * the right question with hearts and streak intact; the route returns
- * isCorrect, correctIndex, heartsRemaining and streak. Scoring is a local
- * comparison there, not a model call — this component keeps its own copy only
- * until that route exists.
+ * Scoring happens server-side: this component does not receive the answer key.
+ * POST /api/runs/:id/answers compares the selection against the stored correct
+ * index and returns the verdict, the explanations, hearts and streak. It is
+ * idempotent per question, so a double-tap cannot drain hearts.
  */
-export function QuizPlayer({ runId, questions }: { runId: string; questions: Question[] }) {
+
+type AnswerResponse = {
+  isCorrect: boolean;
+  correctIndex: number;
+  heartsRemaining: number;
+  streak: number;
+  runComplete: boolean;
+  outOfHearts: boolean;
+};
+
+export function QuizPlayer({
+  runId,
+  questions,
+  startIndex,
+  heartsRemaining,
+  initialStreak,
+}: {
+  runId: string;
+  questions: PlayableQuestion[];
+  startIndex: number;
+  heartsRemaining: number;
+  initialStreak: number;
+}) {
   const router = useRouter();
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(startIndex);
   const [picked, setPicked] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-  const [hearts, setHearts] = useState(STARTING_HEARTS);
-  const [streak, setStreak] = useState(0);
-  const [correct, setCorrect] = useState<boolean[]>([]);
+  const [result, setResult] = useState<AnswerResponse | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hearts, setHearts] = useState(heartsRemaining);
+  const [streak, setStreak] = useState(initialStreak);
+  const [answered, setAnswered] = useState(startIndex);
 
   const question = questions[index];
   const total = questions.length;
   const level = 1;
 
-  function submit() {
-    if (picked === null || revealed) return;
-    const isCorrect = picked === question.correctIndex;
-    setRevealed(true);
-    setCorrect((c) => [...c, isCorrect]);
-    setStreak((s) => (isCorrect ? s + 1 : 0));
-    if (!isCorrect) setHearts((h) => h - 1);
+  async function submit() {
+    if (picked === null || result || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/runs/${runId}/answers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ questionId: question.id, selectedIndex: picked }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setError(payload.error ?? "Could not record that answer.");
+        setSubmitting(false);
+        return;
+      }
+
+      setResult(payload as AnswerResponse);
+      setHearts(payload.heartsRemaining);
+      setStreak(payload.streak);
+      setAnswered((count) => count + 1);
+    } catch {
+      setError("Could not reach the server. Check your connection.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function next() {
     // At zero hearts the run ends early and reports on what was answered.
-    const outOfHearts = hearts <= 0;
-    if (outOfHearts || index + 1 >= total) {
+    if (result?.runComplete || index + 1 >= total) {
       router.push(`/runs/${runId}/complete`);
+      router.refresh();
       return;
     }
     setIndex(index + 1);
     setPicked(null);
-    setRevealed(false);
+    setResult(null);
   }
 
   return (
     <div className="flex w-full max-w-5xl flex-col gap-4 lg:flex-row">
       <Panel tone="light" className="max-w-4xl p-6 sm:p-9">
         <div className="flex items-start justify-between">
-          <Hearts remaining={hearts} total={STARTING_HEARTS} />
+          <Hearts remaining={hearts} total={3} />
           <div className="text-pixel text-xs text-[#5a5588]">
             QUESTION {index + 1} / {total}
           </div>
@@ -81,9 +125,8 @@ export function QuizPlayer({ runId, questions }: { runId: string; questions: Que
         <div className="mt-6 flex flex-col gap-3">
           {question.options.map((option, i) => {
             const on = picked === i;
-            const isAnswer = i === question.correctIndex;
-            const showCorrect = revealed && isAnswer;
-            const showWrong = revealed && on && !isAnswer;
+            const showCorrect = result !== null && i === result.correctIndex;
+            const showWrong = result !== null && on && !result.isCorrect;
 
             const background = showCorrect
               ? "#c7f0d0"
@@ -105,13 +148,13 @@ export function QuizPlayer({ runId, questions }: { runId: string; questions: Que
                 key={option.label}
                 type="button"
                 onClick={() => setPicked(i)}
-                disabled={revealed}
+                disabled={result !== null || submitting}
                 aria-pressed={on}
                 className="group flex items-center gap-4 rounded-xl px-3 py-3 text-left transition disabled:cursor-default"
                 style={{
                   background,
                   border,
-                  boxShadow: on && !revealed ? "0 0 0 3px rgba(74,222,128,0.25)" : "none",
+                  boxShadow: on && !result ? "0 0 0 3px rgba(74,222,128,0.25)" : "none",
                 }}
               >
                 <span
@@ -135,6 +178,10 @@ export function QuizPlayer({ runId, questions }: { runId: string; questions: Que
           })}
         </div>
 
+        {error ? (
+          <p className="text-display mt-4 text-base font-medium text-[#c0392b]">{error}</p>
+        ) : null}
+
         <div className="mt-6 flex items-center justify-between gap-4">
           {/* TODO (P2): reveal the grounding file path without the answer. */}
           <button
@@ -145,17 +192,23 @@ export function QuizPlayer({ runId, questions }: { runId: string; questions: Que
           </button>
           <button
             type="button"
-            onClick={revealed ? next : submit}
-            disabled={picked === null}
+            onClick={result ? next : submit}
+            disabled={picked === null || submitting}
             className="btn-pixel btn-gold disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {!revealed ? "SUBMIT" : index + 1 >= total || hearts <= 0 ? "FINISH" : "NEXT QUESTION"}
+            {submitting
+              ? "CHECKING…"
+              : !result
+                ? "SUBMIT"
+                : result.runComplete || index + 1 >= total
+                  ? "FINISH"
+                  : "NEXT QUESTION"}
             <Arrow className="text-sm" />
           </button>
         </div>
       </Panel>
 
-      <QuizRail level={level} answered={correct.length} total={total} streak={streak} />
+      <QuizRail level={level} answered={answered} total={total} streak={streak} />
     </div>
   );
 }

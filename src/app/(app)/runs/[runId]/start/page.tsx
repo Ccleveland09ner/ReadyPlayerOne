@@ -1,21 +1,23 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { BranchIcon, CodeIcon, DocIcon, Play } from "@/components/ui/Icons";
 import { Panel } from "@/components/ui/Panel";
-import { MOCK_REPO } from "@/lib/mock-data";
+import { loadRun } from "@/lib/runs";
 
 /** Screen 5 — confirm the repo and start. */
 export default async function StartPage({ params }: PageProps<"/runs/[runId]/start">) {
   const { runId } = await params;
+  const run = await loadRun(runId);
+  if (!run) notFound();
 
-  // TODO: read the run row for owner/repo/question_count instead of the mock.
   const rows = [
     {
       Icon: BranchIcon,
       label: "Repository",
-      value: `https://github.com/${MOCK_REPO.owner}/${MOCK_REPO.repo}`,
+      value: `https://github.com/${run.owner}/${run.repo}`,
     },
     { Icon: CodeIcon, label: "Quiz Type", value: "Code Understanding" },
-    { Icon: DocIcon, label: "Questions", value: "5 Questions" },
+    { Icon: DocIcon, label: "Questions", value: `${run.question_count} Questions` },
   ];
 
   return (

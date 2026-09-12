@@ -2,10 +2,18 @@ import Link from "next/link";
 import { Arrow, BranchIcon, DocIcon, Trophy } from "@/components/ui/Icons";
 import { Pager } from "@/components/ui/Pager";
 import { Panel } from "@/components/ui/Panel";
-import { MASTERY_TONE_COLOR, percentFor } from "@/lib/progression/mastery";
-import { MOCK_HISTORY } from "@/lib/mock-data";
+import { MASTERY_TONE_COLOR } from "@/lib/progression/mastery";
+import { HISTORY_PAGE_SIZE, listRuns } from "@/lib/history";
 
-const PAGE_SIZE = 10;
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+const timeFormat = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+});
 
 const scoreColor = (n: number) => (n >= 4 ? "#4ade80" : n >= 3 ? "#ffc23c" : "#ff5470");
 
@@ -15,11 +23,8 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
   const rawPage = Array.isArray(params.page) ? params.page[0] : params.page;
   const page = Math.max(1, Number.parseInt(rawPage ?? "1", 10) || 1);
 
-  // TODO: read runs for this player from src/lib/history, scoped by the
-  // anon_id cookie server-side (the client must never supply an anon_id).
-  const total = MOCK_HISTORY.length;
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const rows = MOCK_HISTORY.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // Scoped by the anon_id cookie server-side; the client never supplies one.
+  const { rows, total, pageCount } = await listRuns(page);
 
   return (
     <Panel className="max-w-5xl p-5 sm:p-7">
@@ -77,20 +82,22 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
                 }}
               >
                 <span className="text-pixel text-sm text-white">
-                  {row.best ? <Trophy /> : (page - 1) * PAGE_SIZE + i + 1}
+                  {row.best ? <Trophy /> : (page - 1) * HISTORY_PAGE_SIZE + i + 1}
                 </span>
                 <span className="text-display flex items-center gap-2 text-lg font-semibold text-white">
-                  <BranchIcon className="text-[#7c8cff]" /> {row.repo}
+                  <BranchIcon className="text-[#7c8cff]" /> {row.owner}/{row.repo}
                 </span>
                 <span className="text-display text-sm text-[#b7b2e6]">
-                  {row.date}
+                  {dateFormat.format(new Date(row.createdAt))}
                   <br />
-                  <span className="text-[#8b86c9]">{row.time}</span>
+                  <span className="text-[#8b86c9]">
+                    {timeFormat.format(new Date(row.createdAt))}
+                  </span>
                 </span>
                 <span className="text-pixel text-xs" style={{ color: scoreColor(row.score) }}>
-                  {row.score} / 5
+                  {row.score} / {row.total}
                   <br />
-                  <span className="text-[10px]">{percentFor(row.score, 5)}%</span>
+                  <span className="text-[10px]">{row.percent}%</span>
                 </span>
                 <span
                   className="text-display text-base font-semibold"
@@ -98,10 +105,9 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
                 >
                   {row.mastery}
                 </span>
-                {/* TODO: a finished run opens complete; an unfinished one resumes
-                    at the first unanswered question. */}
+                {/* Finished runs open results; unfinished ones resume. */}
                 <Link
-                  href={`/runs/${row.runId}/complete`}
+                  href={row.href}
                   className="btn-pixel btn-gold justify-self-end !px-3 !py-2 !text-[9px]"
                 >
                   VIEW <Arrow className="text-xs" />

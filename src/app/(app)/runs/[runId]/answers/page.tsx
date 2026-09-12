@@ -1,23 +1,25 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { CitationLink, LowConfidenceTag } from "@/components/ui/CitationLink";
 import { Check, Cross } from "@/components/ui/Icons";
 import { Panel } from "@/components/ui/Panel";
-import {
-  MOCK_COMMIT_SHA,
-  MOCK_QUIZ,
-  MOCK_REPO,
-  MOCK_SELECTIONS,
-} from "@/lib/mock-data";
-import { TOPIC_LABELS } from "@/lib/types";
+import { loadReview } from "@/lib/quiz/read";
+import { TOPIC_LABELS, type Citation } from "@/lib/types";
 
 /**
- * Screen 9 — Answer Review. There is no mockup for this screen; it reuses the
- * dark panel frame. This is where the verification pipeline becomes visible,
- * so every explanation carries its citation or is labelled low-confidence.
+ * Screen 9 — Answer Review.
+ *
+ * Where the verification pipeline becomes visible. Every citation here
+ * survived all four rules at generation time; an option whose citation was
+ * stripped is labelled low-confidence rather than presented as authoritative.
  */
 export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/answers">) {
   const { runId } = await params;
-  const { owner, repo } = MOCK_REPO;
+
+  const review = await loadReview(runId);
+  if (!review) notFound();
+
+  const { owner, repo, commit_sha: commitSha } = review.run;
 
   return (
     <Panel className="max-w-4xl p-5 sm:p-7">
@@ -34,10 +36,11 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
       </div>
 
       <div className="mt-6 flex flex-col gap-4">
-        {MOCK_QUIZ.map((question, qi) => {
-          const selected = MOCK_SELECTIONS[qi];
-          const isCorrect = selected === question.correctIndex;
-          const chosen = selected === null ? null : question.options[selected];
+        {review.questions.map((question, qi) => {
+          const chosen =
+            question.selectedIndex === null
+              ? null
+              : question.options[question.selectedIndex];
           const answer = question.options[question.correctIndex];
 
           return (
@@ -45,7 +48,7 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
               key={question.id}
               className="rounded-xl p-5"
               style={{
-                border: `2px solid ${isCorrect ? "rgba(74,222,128,0.45)" : "rgba(255,84,112,0.45)"}`,
+                border: `2px solid ${question.isCorrect ? "rgba(74,222,128,0.45)" : "rgba(255,84,112,0.45)"}`,
                 background: "rgba(20,17,54,0.6)",
               }}
             >
@@ -58,30 +61,38 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
                     {question.prompt}
                   </h2>
                 </div>
-                <span className={`text-2xl ${isCorrect ? "text-[#4ade80]" : "text-[#ff5470]"}`}>
-                  {isCorrect ? <Check /> : <Cross />}
+                <span className={`text-2xl ${question.isCorrect ? "text-[#4ade80]" : "text-[#ff5470]"}`}>
+                  {question.isCorrect ? <Check /> : <Cross />}
                 </span>
               </header>
 
               <div className="mt-4 flex flex-col gap-3">
-                {!isCorrect && chosen ? (
+                {!question.isCorrect && chosen ? (
                   <Explanation
                     kind="wrong"
                     heading={`You chose ${chosen.label}. ${chosen.text}`}
                     body={chosen.explanation}
-                    citation={chosen.verified ? chosen.citation : null}
+                    citation={chosen.citation}
                     owner={owner}
                     repo={repo}
+                    commitSha={commitSha}
                   />
+                ) : null}
+
+                {question.selectedIndex === null ? (
+                  <p className="text-display text-sm text-[#b7b2e6]">
+                    You did not answer this question.
+                  </p>
                 ) : null}
 
                 <Explanation
                   kind="right"
                   heading={`Correct answer: ${answer.label}. ${answer.text}`}
                   body={answer.explanation}
-                  citation={answer.verified ? answer.citation : null}
+                  citation={answer.citation}
                   owner={owner}
                   repo={repo}
+                  commitSha={commitSha}
                 />
               </div>
             </article>
@@ -99,13 +110,15 @@ function Explanation({
   citation,
   owner,
   repo,
+  commitSha,
 }: {
   kind: "right" | "wrong";
   heading: string;
   body: string;
-  citation: { path: string; startLine: number; endLine: number } | null;
+  citation: Citation | null;
   owner: string;
   repo: string;
+  commitSha: string;
 }) {
   const accent = kind === "right" ? "#4ade80" : "#ff5470";
   return (
@@ -122,7 +135,7 @@ function Explanation({
           <CitationLink
             owner={owner}
             repo={repo}
-            commitSha={MOCK_COMMIT_SHA}
+            commitSha={commitSha}
             citation={citation}
           />
         ) : (
