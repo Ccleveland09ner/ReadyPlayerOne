@@ -1,25 +1,60 @@
-/**
- * Chunking, embedding and retrieval.
- *
- * Not implemented yet (Feature 2). Chunk sizes come from the tech design:
- * files under 40 lines become one chunk, everything else is a 60-line window
- * with 10-line overlap, and line numbers are 1-based and exact.
- */
+import "server-only";
+import { createServiceClient } from "@/lib/supabase/service";
+import { embedOne } from "@/lib/index/embed";
 
-export const CHUNK_WINDOW_LINES = 60;
-export const CHUNK_OVERLAP_LINES = 10;
-export const WHOLE_FILE_UNDER_LINES = 40;
+export {
+  chunkFile,
+  countLines,
+  splitLines,
+  CHUNK_OVERLAP_LINES,
+  CHUNK_WINDOW_LINES,
+  WHOLE_FILE_UNDER_LINES,
+  type SourceChunk,
+} from "@/lib/index/chunk";
+
 export const RETRIEVAL_TOP_K = 6;
 
+export type RetrievedChunk = {
+  id: string;
+  file_path: string;
+  start_line: number;
+  end_line: number;
+  content: string;
+  language: string | null;
+  similarity: number;
+};
+
 /**
- * A cached or retaken run points at another run chunks, so every query
- * against chunks and repo_files must resolve through here — never run.id.
+ * A cached or retaken run points at another run's chunks, so every query
+ * against `chunks` and `repo_files` must resolve through here -- never
+ * `run.id` directly.
+ *
  * Getting this wrong means cached runs retrieve nothing and generation
- * silently degrades.
+ * silently degrades into generic questions, which is an ugly bug to find at
+ * hour 19.
  */
 export function effectiveSnapshotId(run: {
   id: string;
-  snapshotRunId: string | null;
+  snapshot_run_id: string | null;
 }): string {
-  return run.snapshotRunId ?? run.id;
+  return run.snapshot_run_id ?? run.id;
+}
+
+/** Cosine nearest neighbours inside one run's partition. */
+export async function retrieve(
+  snapshotId: string,
+  query: string,
+  topK: number = RETRIEVAL_TOP_K,
+): Promise<RetrievedChunk[]> {
+  const embedding = await embedOne(query);
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase.rpc("match_chunks", {
+    p_run_id: snapshotId,
+    p_embedding: JSON.stringify(embedding),
+    p_match_count: topK,
+  });
+
+  if (error) throw new Error(`Retrieval failed: ${error.message}`);
+  return (data ?? []) as RetrievedChunk[];
 }
