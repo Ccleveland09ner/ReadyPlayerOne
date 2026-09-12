@@ -102,6 +102,21 @@ export function errorResponse(
   }
 
   if (error instanceof EmbeddingError) {
+    // A rejected key is a configuration problem, not a transient one. Saying
+    // "could not be reached, retryable" about a 401 invites someone to retry a
+    // bad credential forever.
+    if (error.status === 401 || error.status === 403) {
+      log.error("run.fail", {
+        ...context,
+        kind: "embedding_unauthorized",
+        status: error.status,
+      });
+      return apiError(
+        "not_configured",
+        "The embedding provider rejected EMBEDDING_API_KEY. Check that the key belongs to the provider EMBEDDING_BASE_URL points at.",
+      );
+    }
+
     log.error("run.fail", { ...context, kind: "embedding_failed", error: error.message });
     return apiError(
       "embedding_failed",
