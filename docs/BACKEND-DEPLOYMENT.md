@@ -12,7 +12,7 @@ deployment, and to check it actually works once it is there.
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key | **Server only** | Every write; all four pipeline routes |
 | `GITHUB_TOKEN` | github.com/settings/tokens → classic, **no scopes** | Server only | Ingestion at any real rate |
 | `ANTHROPIC_API_KEY` | console.anthropic.com/settings/keys | Server only | Question generation |
-| `ANTHROPIC_MODEL` | optional | Server only | Overriding the `claude-opus-5` default |
+| `ANTHROPIC_MODEL` | optional | Server only | Overriding the `claude-haiku-4-5` default |
 | `EMBEDDING_API_KEY` | platform.openai.com/api-keys | Server only | Indexing |
 | `EMBEDDING_BASE_URL` | optional | Server only | Pointing at a non-OpenAI provider |
 | `EMBEDDING_MODEL` | optional | Server only | Overriding `text-embedding-3-small` |
@@ -93,6 +93,57 @@ uses. It covers what a migration file cannot prove on its own:
 
 It creates rows under `owner = 'verify'` and deletes them on the way out.
 
+## Build and runtime configuration
+
+`next.config.ts` carries the settings that have to be true in production and
+that nobody should have to remember to set.
+
+### Response headers
+
+Applied to every route:
+
+| Header | Value | Why |
+|---|---|---|
+| `X-Frame-Options` | `DENY` | Nothing embeds this app, so framing it is only useful for clickjacking it |
+| `X-Content-Type-Options` | `nosniff` | |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Repository names sit in the path on `/runs/:id`; following a citation link must not hand them to github.com |
+| `Permissions-Policy` | camera, microphone, geolocation, interest-cohort all denied | |
+| `x-powered-by` | *removed* | No reason to announce the framework version |
+
+**There is no Content-Security-Policy, deliberately.** A useful one needs a
+per-request nonce -- generated in `proxy.ts` and threaded through the root
+layout -- because Next inlines a bootstrap script. A static policy loose enough
+to permit that means `unsafe-inline`, which would advertise protection it does
+not provide. Adding a real nonce-based CSP is the upgrade, not adding a header.
+
+None of these are the security boundary. RLS, the service-role split and the
+server-side answer key are. These close the gaps a scanner finds first.
+
+### Function execution windows
+
+Each route states its own ceiling rather than inheriting the platform default,
+which is how a working pipeline starts timing out on someone else's plan
+change:
+
+| Route | `maxDuration` | Measured | Why that number |
+|---|---|---|---|
+| `POST /api/runs` | 60s | ~0.9–1.2s | A large repository's tree fetch is not free |
+| `POST /api/runs/:id/index` | 60s | ~1.5s/batch | Headroom for the embedding provider's slow days, not for the batch |
+| `POST /api/runs/:id/questions` | 60s | ~30s | Generation retries once when citation checks reject a quiz, so it can legitimately approach a minute |
+| `POST /api/runs/:id/answers` | 15s | ~110ms | A comparison and two writes; no model call |
+
+60s is the Vercel Hobby ceiling. On Pro the questions route can go higher if
+the retry path turns out to need it -- that is the first number to raise if
+generation starts timing out rather than failing.
+
+### Type safety at build time
+
+`typescript.ignoreBuildErrors` is explicitly `false`. It is already the
+default; stating it means nobody can quietly flip it to turn a red build green.
+There is no `eslint` counterpart -- Next 16 removed `next lint`, so linting is
+`npm run lint` and belongs to CI rather than to the build. `npm run verify`
+runs lint, typecheck, tests and build in one go.
+
 ## Routing gate
 
 `proxy.ts` does three things on every request: refresh the Supabase session,
@@ -161,6 +212,25 @@ rather than matching prose:
 | `not_configured` | 500 | no | A required environment variable is missing — the message names it |
 | `internal` | 500 | yes | Logged server-side, generic to the caller |
 
+### Reading it from the browser
+
+`src/lib/api-client.ts` is the only place that knows this shape:
+
+```ts
+const payload = await response.json();
+if (!response.ok) setError(errorMessage(payload, "Could not read that repo."));
+```
+
+This is not ceremony. Client components previously did
+`setError(payload.error ?? "…")`, which puts the envelope *object* into React
+state -- and rendering an object as a child throws, so any failure on the
+entry form took the whole screen down rather than reporting the problem. The
+helper is total: any body at all, including a proxy's HTML error page, comes
+back as a string worth showing someone. `errorCode(payload)` exposes the stable
+code for branching. `postJson()` wraps both for the ingestion loop.
+
+Eight unit tests in `src/lib/api-client.test.ts` hold the regression.
+
 ## Rate limits and budgets
 
 Two different things, both in `src/lib/ratelimit.ts`:
@@ -200,9 +270,15 @@ numbers. Nothing logs secrets or repository file contents.
 
 1. `npm install` -- the landing screen added `three`, `@types/three` and
    `framer-motion`, so a checkout from before that commit needs a fresh install
-2. Supabase project created and `db push` applied
-3. `node scripts/verify-backend.mjs` passes
-4. Environment variables set in Vercel
-5. Push to `main` → Vercel builds
-6. Warm the demo repositories on production so the snapshot cache is populated
+2. `npm run verify` -- lint, typecheck, 131 tests and a production build
+3. Supabase project created and `db push` applied
+4. `node scripts/verify-backend.mjs` passes against it
+5. Environment variables set in Vercel, all three environments ticked
+6. Push to `main` → Vercel builds
+7. Against the deployment: `node scripts/verify-screens.mjs <url>`,
+   `verify-auth-flow.mjs <url>` and `verify-repo-selector.mjs <url>`. All three
+   seed their own rows and clean up, and none of them spend model credits
+8. `node scripts/smoke-run.mjs <repo> <url>` once, to prove the paid path works
+   where it will actually run
+9. Warm the demo repositories on production so the snapshot cache is populated
    and the demo starts in seconds

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import { BranchIcon, Play } from "@/components/ui/Icons";
+import { errorMessage } from "@/lib/api-client";
 
 /**
  * Posts to /api/runs, which resolves the commit SHA and returns a run id.
@@ -30,7 +31,7 @@ export function RepoEntryForm() {
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "Could not read that repository.");
+        setError(errorMessage(payload, "Could not read that repository."));
         setSubmitting(false);
         return;
       }

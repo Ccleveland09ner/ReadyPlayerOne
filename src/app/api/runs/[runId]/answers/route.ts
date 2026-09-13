@@ -24,6 +24,9 @@ import type { QuestionOption } from "@/lib/types";
  *             xpAwarded, runComplete, outOfHearts }
  */
 
+/** A comparison and two writes. No model call, no reason to linger. */
+export const maxDuration = 15;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ runId: string }> },

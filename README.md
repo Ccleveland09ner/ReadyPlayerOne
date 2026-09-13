@@ -24,6 +24,8 @@ The pipeline works end to end against real repositories.
 | Answer scoring, run persistence, history, report | Built |
 | Mastery tiers, XP and level derivation | Built |
 | Accounts — sign up, sign in, claim anonymous runs | Built |
+| Top-bar selector — replay any of your three most recent repos | Built |
+| Production hardening — response headers, pinned function windows | Built |
 
 Accounts are optional: anonymous play is the demo path, runs save to the
 browser, and signing in later claims them. **This Supabase project has email
@@ -49,10 +51,11 @@ absent, and read paths return empty states rather than throwing. To run an
 actual quiz you need the keys in [Configuration](#configuration).
 
 ```bash
+npm run verify         # lint, typecheck, tests and build — the whole gate
 npm run build          # next build
 npm run lint           # eslint
-npm test               # vitest, 123 tests
-npx tsc --noEmit       # type check (run a build first — Next generates route types)
+npm run typecheck      # tsc --noEmit (run a build first — Next generates route types)
+npm test               # vitest, 131 tests
 ```
 
 ### Verification scripts
@@ -65,6 +68,7 @@ node scripts/verify-backend.mjs               # 22 checks: schema, RLS, cache ke
 node scripts/verify-auth.mjs                  # 8 checks: sign-up, sign-in, claim-on-sign-in, profile RLS
 node scripts/verify-auth-flow.mjs <baseUrl>   # 15 checks: the app's response to a session
 node scripts/verify-screens.mjs <baseUrl>     # 25 checks: history, report, results, review, HUD
+node scripts/verify-repo-selector.mjs <base>  # 7 checks: the top-bar dropdown and what it starts
 node scripts/smoke-run.mjs <repo> <baseUrl>   # one repo end to end, every question + citation
 node scripts/simulate-user.mjs <repo> <base>  # the whole journey, landing to logout
 node scripts/batch-test.mjs <list> <baseUrl>  # many repos, the distribution of outcomes
@@ -95,14 +99,16 @@ src/
 │   └── api/runs/…                  4 pipeline endpoints
 │
 ├── components/
-│   ├── shell/   DashboardShell, SideNav, TopBar
+│   ├── shell/   DashboardShell, SideNav, TopBar, RepoSelector
 │   ├── quiz/    Hearts, ProgressPips, StreakPanel
 │   ├── auth/    AuthBackdrop, Field, OtpLoginForm (parked)
 │   └── ui/      Panel, Brand, Icons, MasteryBar, CitationLink, Pager,
 │                TrendChart, pixel-rocket-voyager, background-pixel-stars
 │
 ├── lib/
-│   ├── types.ts  schemas.ts  env.ts  runs.ts  api.ts  log.ts
+│   ├── types.ts  schemas.ts  env.ts  runs.ts  log.ts
+│   ├── api.ts                      server error envelopes
+│   ├── api-client.ts               the browser's reader for them
 │   ├── retry.ts  ratelimit.ts
 │   ├── auth/                       server actions, session reads, validation
 │   ├── github/                     URL parsing, tree fetch, filtering, caps
@@ -149,6 +155,19 @@ A signed-in visitor always passes, so a bookmarked `/history` opened in a new
 browser goes straight there rather than being introduced to a product they
 already use.
 
+### Replaying a repository
+
+The repository chip in the top bar is a dropdown of your three most recent
+repositories. Picking one starts a **new** run against it and drops you at
+`/runs/:id/start` — the ordinary confirm → ingest → quiz path, not a replay of
+the old run, which is already answered.
+
+That sounds expensive and is not. The snapshot cache is keyed on the commit
+SHA, so a repository you have already read comes back in about a second with
+no re-ingestion. If the repository has moved on since, the SHA differs, the
+cache misses and it indexes again — which is correct, because a question has
+to describe the commit it was generated from.
+
 ## How it works
 
 The client orchestrates the pipeline, because ingesting a repository does not
@@ -189,7 +208,7 @@ Supabase setup: [docs/BACKEND-DEPLOYMENT.md](./docs/BACKEND-DEPLOYMENT.md).
 | `NEXT_PUBLIC_SUPABASE_URL` / `..._ANON_KEY` | Session refresh |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server only.** Every write |
 | `GITHUB_TOKEN` | Ingestion at any real rate |
-| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | Question generation |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | Question generation. Defaults to `claude-haiku-4-5` |
 | `EMBEDDING_API_KEY` / `..._BASE_URL` / `..._MODEL` | Indexing |
 
 Anthropic serves no embeddings endpoint, so embeddings are a second provider.
@@ -263,6 +282,12 @@ dispose their resources on unmount.
 - **The answer key never reaches the browser.** `loadQuizForPlay` strips
   `correct_index` and every explanation; the answer route returns them on
   submit.
+- **Client code reads API failures through `src/lib/api-client.ts`.** Routes
+  answer with `{ error: { code, message, retryable } }`. Reading `payload.error`
+  and putting it in React state puts an *object* there, and rendering an object
+  as a child throws — so a mistyped repository URL used to take the screen down
+  instead of reporting the problem. `errorMessage(payload, fallback)` is the
+  one place that knows the shape.
 
 ## Working with an AI agent
 
@@ -274,9 +299,37 @@ opens a PR, instead of editing your main checkout directly.
 
 ## Deploying
 
-Vercel, free tier. Set the same environment variables in the project dashboard.
-Deploy early rather than discovering deployment bugs at hour 20. Warm the demo
-repositories on production so the snapshot cache is populated and the demo
+Vercel, free tier. Full walkthrough — environment mapping, Supabase setup,
+error codes, cold-start numbers — in
+[docs/BACKEND-DEPLOYMENT.md](./docs/BACKEND-DEPLOYMENT.md).
+
+```bash
+npm run verify                    # must be green before anything else
+npx supabase db push --linked     # schema onto the production project
+node scripts/verify-backend.mjs   # 22 checks against it
+vercel --prod
+```
+
+What is already set up for production, so you do not have to wonder:
+
+- **Response headers** (`next.config.ts`): `X-Frame-Options: DENY`,
+  `nosniff`, `strict-origin-when-cross-origin` and a `Permissions-Policy`
+  denying camera, microphone and geolocation. `x-powered-by` is off. There is
+  deliberately no CSP — a useful one needs a per-request nonce, and a static
+  one loose enough for Next's inlined bootstrap would advertise protection it
+  does not provide.
+- **Function windows are pinned, not inherited.** Generation gets 60s
+  (it runs ~30s and retries once), indexing and run creation 60s, answer
+  scoring 15s. Inheriting a platform default is how a working pipeline starts
+  timing out on someone else's plan change.
+- **The model default is the cheap one.** `claude-haiku-4-5` unless
+  `ANTHROPIC_MODEL` says otherwise — the tier the 50-repository run was
+  verified against.
+- **A build fails on a type error.** `typescript.ignoreBuildErrors` is
+  explicitly `false` so nobody can quietly flip it to turn a red build green.
+
+Deploy early rather than discovering deployment bugs at hour 20, and warm the
+demo repositories on production so the snapshot cache is populated and the demo
 starts in seconds.
 
 ## Reference

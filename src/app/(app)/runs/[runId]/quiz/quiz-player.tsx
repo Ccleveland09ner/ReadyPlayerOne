@@ -7,6 +7,7 @@ import { ProgressPips } from "@/components/quiz/ProgressPips";
 import { QuizRail } from "@/components/quiz/StreakPanel";
 import { Arrow, Bulb } from "@/components/ui/Icons";
 import { Panel } from "@/components/ui/Panel";
+import { errorMessage } from "@/lib/api-client";
 import { levelName } from "@/lib/progression/mastery";
 import { TOPIC_LABELS } from "@/lib/types";
 import type { PlayableQuestion } from "@/lib/quiz/read";
@@ -71,7 +72,7 @@ export function QuizPlayer({
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error ?? "Could not record that answer.");
+        setError(errorMessage(payload, "Could not record that answer."));
         setSubmitting(false);
         return;
       }

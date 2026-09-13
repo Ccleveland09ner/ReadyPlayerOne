@@ -39,7 +39,7 @@ export const env = {
   githubToken: () => process.env.GITHUB_TOKEN || null,
 
   anthropicApiKey: () => required("ANTHROPIC_API_KEY"),
-  anthropicModel: () => optional("ANTHROPIC_MODEL", "claude-opus-5"),
+  anthropicModel: () => optional("ANTHROPIC_MODEL", "claude-haiku-4-5"),
 
   embeddingApiKey: () => required("EMBEDDING_API_KEY"),
   embeddingBaseUrl: () =>

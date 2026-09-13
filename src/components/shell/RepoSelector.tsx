@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { BranchIcon, ChevronDown } from "@/components/ui/Icons";
+import { errorMessage } from "@/lib/api-client";
 
 export type RecentRepo = { owner: string; repo: string; runId: string };
 
@@ -68,7 +69,7 @@ export function RepoSelector({
       const payload = await response.json();
 
       if (!response.ok) {
-        setError(payload.error?.message ?? "Could not start that repository.");
+        setError(errorMessage(payload, "Could not start that repository."));
         setStarting(null);
         return;
       }

@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Play } from "@/components/ui/Icons";
+import { postJson } from "@/lib/api-client";
 import type { IngestStage, StageDetail } from "@/lib/types";
+
+type IndexBatch = { done: boolean; filesRemaining?: number; chunkCount?: number };
 
 const STAGES: { id: IngestStage; label: string; detail: (s: StageDetail) => string }[] = [
   {
@@ -55,19 +58,6 @@ export function IngestProgress({
 
     let cancelled = false;
 
-    async function post(path: string) {
-      const response = await fetch(path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload.error ?? `Request failed (${response.status}).`);
-      }
-      return payload;
-    }
-
     async function run() {
       try {
         // Index in batches until the queue drains. One retry per batch, then
@@ -77,9 +67,9 @@ export function IngestProgress({
 
           let batch;
           try {
-            batch = await post(`/api/runs/${runId}/index`);
+            batch = await postJson<IndexBatch>(`/api/runs/${runId}/index`);
           } catch {
-            batch = await post(`/api/runs/${runId}/index`);
+            batch = await postJson<IndexBatch>(`/api/runs/${runId}/index`);
           }
 
           if (cancelled) return;
@@ -97,7 +87,7 @@ export function IngestProgress({
         if (cancelled) return;
         setDetail((current) => ({ ...current, stage: "generating" }));
 
-        await post(`/api/runs/${runId}/questions`);
+        await postJson(`/api/runs/${runId}/questions`);
         if (cancelled) return;
 
         router.push(`/runs/${runId}/quiz`);

@@ -31,6 +31,12 @@ import { createServiceClient } from "@/lib/supabase/service";
  * Request:  { repoUrl: string }
  * Response: { runId, owner, repo, commitSha, fileCount, cached }
  */
+/**
+ * Two GitHub calls and a tree fetch. Comfortably fast, but a large
+ * repository's tree is not free, so the window is stated rather than inherited.
+ */
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   try {
     // Creating runs is the route that costs GitHub quota and embedding

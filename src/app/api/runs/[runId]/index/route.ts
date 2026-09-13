@@ -24,6 +24,13 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 const DEFAULT_BATCH_SIZE = 8;
 
+/**
+ * One batch of chunking and embedding per call -- around 1.5s, and the client
+ * loops. The generous window is for the embedding provider's slow days, not
+ * for the batch itself.
+ */
+export const maxDuration = 60;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ runId: string }> },

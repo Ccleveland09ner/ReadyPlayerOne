@@ -23,6 +23,14 @@ import type { QuestionOption } from "@/lib/types";
  * an uncited answer key -- that rule is the product.
  */
 
+/**
+ * The long one: generation runs about 30 seconds and retries once when the
+ * citation checks reject a quiz, so it can legitimately approach a minute.
+ * 60s is the Vercel Hobby ceiling; on Pro this can go higher if the retry path
+ * turns out to need it.
+ */
+export const maxDuration = 60;
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ runId: string }> },
