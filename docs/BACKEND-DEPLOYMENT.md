@@ -144,6 +144,36 @@ There is no `eslint` counterpart -- Next 16 removed `next lint`, so linting is
 `npm run lint` and belongs to CI rather than to the build. `npm run verify`
 runs lint, typecheck, tests and build in one go.
 
+## Deleting a player's data
+
+Clear Quiz History (`src/lib/history/clear.ts`) removes every run an identity
+owns. Because history, the report aggregate, XP, level, mastery and the
+top-bar repository list are all *derived* from `runs` and `answers`, one
+delete clears all of them; nothing is stored that would survive it.
+
+The one thing it cannot simply delete is a run other players are built on.
+`runs.snapshot_run_id` is `on delete set null`, and that has two failure modes,
+both confirmed against the live schema:
+
+| Dependents at the same commit | Naive `delete` does |
+|---|---|
+| Two or more | **Fails, 23505.** Both dependents' `snapshot_run_id` becomes null, so both satisfy `runs_snapshot_cache_key` -- the partial unique index on (owner, repo, commit_sha) where that column is null |
+| Exactly one | **Succeeds and poisons the cache.** The dependent now looks like a reusable snapshot while owning no chunks, so the next player to ask for that repository gets a run with nothing to retrieve from |
+
+So a run with outside dependents is stripped rather than dropped: its answers
+and questions are deleted and its identity is detached to the nil UUID, which
+removes it from every screen (`identityFilter` matches on `anon_id`/`user_id`)
+while the chunks stay put. `isUuid()` rejects the nil UUID, so no browser can
+present it as an anon id and inherit those rows.
+
+What remains is an unowned index of public GitHub source: no score, no attempt,
+nothing personal. `clearHistoryFor` reports both numbers and the settings
+screen says so rather than claiming a clean sweep it did not make.
+
+Covered by `npm run test:live` -- 17 assertions including the 23505 shape, the
+cache-poisoning shape, and History, Report, the HUD and the selector all
+coming back empty.
+
 ## Routing gate
 
 `proxy.ts` does three things on every request: refresh the Supabase session,

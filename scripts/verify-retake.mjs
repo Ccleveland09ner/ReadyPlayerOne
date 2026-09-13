@@ -128,9 +128,10 @@ async function seedFinishedRun(sha, branch) {
   if (error) throw new Error(`seed run: ${error.message}`);
   runIds.push(run.id);
 
-  await db
+  const { error: fileError } = await db
     .from("repo_files")
-    .insert({ run_id: run.id, path: "index.js", size_bytes: 512, included: true });
+    .insert({ run_id: run.id, path: "index.js", byte_size: 512, included: true });
+  if (fileError) throw new Error(`seed repo_files: ${fileError.message}`);
 
   for (let q = 0; q < 5; q++) {
     const { data: question } = await db

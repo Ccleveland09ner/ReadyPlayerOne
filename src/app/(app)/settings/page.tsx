@@ -1,11 +1,15 @@
 import { UserIcon } from "@/components/ui/Icons";
 import { Panel } from "@/components/ui/Panel";
 import { currentSettingsProfile } from "@/lib/auth/session";
+import { playerTotals } from "@/lib/history";
 import { SettingsForm } from "./settings-form";
 
 /** Screen 12 — Settings. */
 export default async function SettingsPage() {
-  const profile = await currentSettingsProfile();
+  const [profile, totals] = await Promise.all([
+    currentSettingsProfile(),
+    playerTotals(),
+  ]);
 
   return (
     <Panel className="max-w-5xl p-5 sm:p-7">
@@ -20,7 +24,7 @@ export default async function SettingsPage() {
           </p>
         </div>
       </div>
-      <SettingsForm profile={profile} />
+      <SettingsForm profile={profile} quizzes={totals.quizzes} />
     </Panel>
   );
 }

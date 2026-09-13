@@ -77,7 +77,10 @@ export async function currentIdentity(): Promise<{
  * `anon_id` forever, and matching on that unconditionally meant the next
  * person to use the browser saw the last person's quiz history.
  */
-function identityFilter(anonId: string | null, userId: string | null): string | null {
+export function identityFilter(
+  anonId: string | null,
+  userId: string | null,
+): string | null {
   const clauses: string[] = [];
   if (anonId) clauses.push(`and(anon_id.eq.${anonId},user_id.is.null)`);
   if (userId) clauses.push(`user_id.eq.${userId}`);

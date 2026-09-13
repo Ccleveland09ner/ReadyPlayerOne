@@ -25,6 +25,7 @@ The pipeline works end to end against real repositories.
 | Mastery tiers, XP and level derivation | Built |
 | Accounts — sign up, sign in, claim anonymous runs | Built |
 | Top-bar selector — replay any of your three most recent repos | Built |
+| Clear Quiz History — deletes every run, answer and derived total | Built |
 | Production hardening — response headers, pinned function windows | Built |
 
 Accounts are optional: anonymous play is the demo path, runs save to the
@@ -55,7 +56,8 @@ npm run verify         # lint, typecheck, tests and build — the whole gate
 npm run build          # next build
 npm run lint           # eslint
 npm run typecheck      # tsc --noEmit (run a build first — Next generates route types)
-npm test               # vitest, 131 tests
+npm test               # vitest, 131 tests — offline, free, deterministic
+npm run test:live      # 17 more against the real Supabase project (see below)
 ```
 
 ### Verification scripts
@@ -77,6 +79,13 @@ node scripts/batch-test.mjs <list> <baseUrl>  # many repos, the distribution of 
 
 `verify-*` scripts clean up after themselves. `smoke-run`, `simulate-user` and
 `batch-test` spend real money on embeddings and generation.
+
+`npm run test:live` (`vitest.live.config.mts`, `src/**/*.live.test.ts`) is the
+same idea in test form: it exercises real functions against the real schema,
+for behaviour no mock reproduces — foreign-key cascades, partial unique
+indexes. It is kept out of `npm test` so that stays offline and free. The
+screen half needs a running server and skips itself without one; point it
+somewhere with `VERIFY_BASE_URL`.
 
 ## Structure
 
@@ -294,6 +303,12 @@ dispose their resources on unmount.
 - **The answer key never reaches the browser.** `loadQuizForPlay` strips
   `correct_index` and every explanation; the answer route returns them on
   submit.
+- **Deleting a run is not always a `delete`.** `runs.snapshot_run_id` is
+  `on delete set null`, so dropping a run other players built on either fails
+  with 23505 (two dependents at one commit both become cache-key rows) or
+  silently leaves a cache entry owning no chunks. `clearHistoryFor` strips
+  those rows instead — questions, answers and identity go, the shared source
+  index stays.
 - **Client code reads API failures through `src/lib/api-client.ts`.** Routes
   answer with `{ error: { code, message, retryable } }`. Reading `payload.error`
   and putting it in React state puts an *object* there, and rendering an object

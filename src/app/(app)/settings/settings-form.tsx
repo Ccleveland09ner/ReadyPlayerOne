@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
+import { ClearHistory } from "@/components/settings/ClearHistory";
 import { ArchiveIcon, GamepadIcon, InfoIcon, KeyIcon, UserIcon } from "@/components/ui/Icons";
 import { SubPanel } from "@/components/ui/Panel";
 import { updateProfileAction, type ProfileState } from "@/lib/auth/profile-actions";
@@ -16,12 +17,18 @@ import type { SettingsProfile } from "@/lib/auth/session";
 /**
  * Screen 12 — Settings.
  *
- * Only PROFILE is backed by the schema (`profiles.username`,
- * `profiles.display_name`) and it is wired. Quiz Preferences, Appearance,
- * Data & Privacy and Account are P2 with nothing reading them yet, so they
- * stay presentational and say so rather than pretending to save.
+ * PROFILE is backed by the schema (`profiles.username`,
+ * `profiles.display_name`), and Clear Quiz History really deletes. Quiz
+ * Preferences, Export and Account are P2 with nothing reading them yet, so
+ * they stay presentational and say so rather than pretending to save.
  */
-export function SettingsForm({ profile }: { profile: SettingsProfile }) {
+export function SettingsForm({
+  profile,
+  quizzes,
+}: {
+  profile: SettingsProfile;
+  quizzes: number;
+}) {
   const [explanations, setExplanations] = useState(true);
   const [snippets, setSnippets] = useState(true);
   const [state, formAction] = useActionState<ProfileState, FormData>(
@@ -84,24 +91,12 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
       </SubPanel>
 
       <div className="flex flex-col gap-4">
-        <SubPanel title="DATA & PRIVACY (P2)" icon={<ArchiveIcon />}>
+        <SubPanel title="DATA & PRIVACY" icon={<ArchiveIcon />}>
           <div className="flex flex-col gap-3">
             <Row label="Clear Quiz History">
-              <button
-                type="button"
-                className="btn-pixel btn-8bit !py-2 !text-[9px]"
-                style={
-                  {
-                    background: "transparent",
-                    color: "#ff5470",
-                    "--btn-edge": "#ff5470",
-                  } as CSSProperties
-                }
-              >
-                CLEAR HISTORY
-              </button>
+              <ClearHistory quizzes={quizzes} />
             </Row>
-            <Row label="Export My Data">
+            <Row label="Export My Data (P2)">
               <button type="button" className="btn-pixel btn-8bit btn-gold !py-2 !text-[9px]">
                 EXPORT (JSON)
               </button>

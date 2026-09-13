@@ -6,6 +6,10 @@ const here = import.meta.dirname;
 export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
+    // *.live.test.ts talks to the real Supabase project, so it is not part of
+    // the default suite: `npm test` must stay offline, free and deterministic.
+    // Run those with `npm run test:live`.
+    exclude: ["**/node_modules/**", "src/**/*.live.test.ts"],
     environment: "node",
   },
   resolve: {
