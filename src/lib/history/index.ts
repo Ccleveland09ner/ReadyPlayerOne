@@ -68,10 +68,18 @@ export async function currentIdentity(): Promise<{
   return { anonId, userId };
 }
 
-/** `anon_id.eq.X,user_id.eq.Y` for a PostgREST `.or()`. */
+/**
+ * The `.or()` filter that scopes every history and report read to one player.
+ *
+ * A run matches on the browser's anon id ONLY while it is still unclaimed.
+ * Once a run belongs to an account it is reachable through `user_id` alone, so
+ * signing out on a shared machine stops showing it. A claimed run keeps its
+ * `anon_id` forever, and matching on that unconditionally meant the next
+ * person to use the browser saw the last person's quiz history.
+ */
 function identityFilter(anonId: string | null, userId: string | null): string | null {
   const clauses: string[] = [];
-  if (anonId) clauses.push(`anon_id.eq.${anonId}`);
+  if (anonId) clauses.push(`and(anon_id.eq.${anonId},user_id.is.null)`);
   if (userId) clauses.push(`user_id.eq.${userId}`);
   return clauses.length ? clauses.join(",") : null;
 }

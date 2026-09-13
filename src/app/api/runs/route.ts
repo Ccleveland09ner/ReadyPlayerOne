@@ -16,6 +16,7 @@ import {
   selectFiles,
 } from "@/lib/github";
 import { requireAnonId } from "@/lib/identity";
+import { currentUser } from "@/lib/auth/session";
 import { createRunInput } from "@/lib/schemas";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -64,6 +65,12 @@ export async function POST(request: NextRequest) {
 
     const { owner, repo } = parsed;
     const anonId = await requireAnonId();
+    // Stamp the account too when there is one. Without this a signed-in
+    // player's runs are tied to the browser alone: they survive a logout on
+    // that machine and vanish on any other, which is the opposite of what
+    // having an account is for. `anon_id` still goes on every run so the
+    // claim-on-sign-in path keeps working for anonymous play.
+    const user = await currentUser();
     const supabase = createServiceClient();
 
     // 404 covers both private and nonexistent; fetchRepoMeta says so honestly.
@@ -104,6 +111,7 @@ export async function POST(request: NextRequest) {
           snapshot_run_id: cached.id,
           status: "generating",
           anon_id: anonId,
+          user_id: user?.id ?? null,
           stage_detail: {
             stage: "generating",
             filesTotal: count ?? 0,
@@ -168,6 +176,7 @@ export async function POST(request: NextRequest) {
         default_branch: defaultBranch,
         status: "indexing",
         anon_id: anonId,
+        user_id: user?.id ?? null,
         stage_detail: {
           stage: "fetching",
           filesTotal: included.length,

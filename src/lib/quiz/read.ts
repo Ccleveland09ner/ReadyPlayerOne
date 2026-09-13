@@ -204,8 +204,11 @@ export async function recentRepos(
   anonId: string | null,
   userId: string | null,
 ): Promise<{ owner: string; repo: string; runId: string }[]> {
+  // Same scoping rule as history: an unclaimed run belongs to the browser, a
+  // claimed one belongs to the account. Otherwise the top-bar repo selector
+  // keeps offering the previous user's repository after they sign out.
   const clauses: string[] = [];
-  if (anonId) clauses.push(`anon_id.eq.${anonId}`);
+  if (anonId) clauses.push(`and(anon_id.eq.${anonId},user_id.is.null)`);
   if (userId) clauses.push(`user_id.eq.${userId}`);
   if (clauses.length === 0 || !isSupabaseConfigured()) return [];
 
