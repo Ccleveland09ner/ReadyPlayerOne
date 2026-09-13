@@ -5,7 +5,7 @@ export function ProgressPips({ current, total }: { current: number; total: numbe
       {Array.from({ length: total }).map((_, i) => (
         <span
           key={i}
-          className="h-4 w-4 rounded-[3px]"
+          className="h-4 w-4"
           style={{
             background: i <= current ? "var(--color-lime)" : "#d3d6ec",
             boxShadow: i <= current ? "0 0 8px rgba(74,222,128,0.6)" : "none",

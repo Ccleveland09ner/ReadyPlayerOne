@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, Cross, Trophy } from "@/components/ui/Icons";
@@ -62,8 +63,8 @@ export default async function CompletePage({ params }: PageProps<"/runs/[runId]/
             {breakdown.map((ok, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center gap-1 rounded-lg px-3 py-2"
-                style={{ border: "2px solid #2f2a63" }}
+                className="chip-8bit flex flex-col items-center gap-1 px-3 py-2"
+                style={{ "--chip-edge": "#2f2a63" } as CSSProperties}
               >
                 <span className={`text-2xl ${ok ? "text-[#4ade80]" : "text-[#ff5470]"}`}>
                   {ok ? <Check /> : <Cross />}

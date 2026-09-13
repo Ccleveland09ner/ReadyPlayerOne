@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import type { IngestStage, StageDetail } from "@/lib/types";
 
@@ -130,11 +130,17 @@ export function IngestProgress({
           return (
             <li
               key={stage.id}
-              className="flex items-center gap-4 rounded-lg px-4 py-4"
-              style={{
-                border: `2px solid ${active ? "var(--color-grape)" : done ? "rgba(74,222,128,0.5)" : "#241f52"}`,
-                background: active ? "rgba(124,92,255,0.14)" : "rgba(24,20,64,0.55)",
-              }}
+              className="box-8bit flex items-center gap-4 px-4 py-4"
+              style={
+                {
+                  "--box-edge": active
+                    ? "var(--color-grape)"
+                    : done
+                      ? "rgba(74,222,128,0.5)"
+                      : "#241f52",
+                  "--box-bg": active ? "rgba(124,92,255,0.14)" : "rgba(24,20,64,0.55)",
+                } as CSSProperties
+              }
             >
               <span className="text-pixel text-lg" style={{ color: done ? "var(--color-lime)" : active ? "#fff" : "#5a5588" }}>
                 {done ? "✓" : active ? "▶" : "·"}
@@ -151,9 +157,9 @@ export function IngestProgress({
         })}
       </ol>
 
-      <div className="mt-6 h-3 overflow-hidden rounded-full" style={{ background: "#241f52" }}>
+      <div className="meter-8bit mt-6 h-3 overflow-hidden" style={{ background: "#241f52" }}>
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full transition-all"
           style={{
             width: `${percent}%`,
             background: "linear-gradient(90deg,#7c5cff,#46c8ff)",

@@ -27,7 +27,7 @@ export function MasteryBar({
         {Array.from({ length: segments }).map((_, i) => (
           <span
             key={i}
-            className="h-5 flex-1 rounded-[3px]"
+            className="h-5 flex-1"
             style={{
               background: i < filled ? color : "#2a2358",
               boxShadow: i < filled ? `0 0 8px ${color}99` : "none",

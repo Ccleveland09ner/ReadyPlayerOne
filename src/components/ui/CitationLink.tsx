@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { citationLabel, citationUrl, type Citation } from "@/lib/types";
 
 /**
@@ -21,8 +22,13 @@ export function CitationLink({
       href={citationUrl(owner, repo, commitSha, citation)}
       target="_blank"
       rel="noreferrer noopener"
-      className="text-pixel inline-flex items-center gap-2 rounded-md px-2 py-1 text-[10px] text-[#7cc7ff] underline-offset-4 transition hover:text-white hover:underline"
-      style={{ background: "rgba(58,123,255,0.12)", border: "1.5px solid rgba(58,123,255,0.4)" }}
+      className="chip-8bit text-pixel inline-flex items-center gap-2 px-2 py-1 text-[10px] text-[#7cc7ff] underline-offset-4 transition hover:text-white hover:underline"
+      style={
+        {
+          "--chip-bg": "rgba(58,123,255,0.12)",
+          "--chip-edge": "rgba(58,123,255,0.45)",
+        } as CSSProperties
+      }
     >
       {citationLabel(citation)}
     </a>
@@ -33,8 +39,8 @@ export function CitationLink({
 export function LowConfidenceTag() {
   return (
     <span
-      className="text-pixel inline-block rounded-md px-2 py-1 text-[9px] text-[#ffc23c]"
-      style={{ border: "1.5px solid rgba(255,194,60,0.5)" }}
+      className="chip-8bit text-pixel inline-block px-2 py-1 text-[9px] text-[#ffc23c]"
+      style={{ "--chip-edge": "rgba(255,194,60,0.55)" } as CSSProperties}
     >
       LOW CONFIDENCE — NO VERIFIED CITATION
     </span>

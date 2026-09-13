@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { PlayerSprite } from "@/components/ui/Brand";
 import { BranchIcon, ChevronDown } from "@/components/ui/Icons";
 import { progressionFor } from "@/lib/progression/mastery";
@@ -30,7 +31,15 @@ export function TopBar({
     <header className="flex flex-wrap items-center justify-between gap-4 px-3 py-4 lg:px-6">
       <button
         type="button"
-        className="pixel-panel-light flex min-w-[220px] items-center gap-3 px-4 py-3 text-left transition hover:brightness-105 sm:min-w-[340px]"
+        className="box-8bit flex min-w-[220px] items-center gap-3 px-4 py-3 text-left transition hover:brightness-105 sm:min-w-[340px]"
+        style={
+          {
+            "--box-bg": "var(--color-parchment)",
+            "--box-edge": "#c2c6e2",
+            "--box-hi": "rgba(255,255,255,0.85)",
+            "--box-lo": "rgba(0,0,0,0.12)",
+          } as CSSProperties
+        }
       >
         <BranchIcon className="text-xl text-[#5b3fd6]" />
         <span className="text-pixel text-ink flex-1 text-[11px] tracking-wide">

@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CitationLink, LowConfidenceTag } from "@/components/ui/CitationLink";
@@ -46,11 +47,15 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
           return (
             <article
               key={question.id}
-              className="rounded-xl p-5"
-              style={{
-                border: `2px solid ${question.isCorrect ? "rgba(74,222,128,0.45)" : "rgba(255,84,112,0.45)"}`,
-                background: "rgba(20,17,54,0.6)",
-              }}
+              className="box-8bit p-5"
+              style={
+                {
+                  "--box-edge": question.isCorrect
+                    ? "rgba(74,222,128,0.45)"
+                    : "rgba(255,84,112,0.45)",
+                  "--box-bg": "rgba(20,17,54,0.6)",
+                } as CSSProperties
+              }
             >
               <header className="flex items-start justify-between gap-4">
                 <div>
@@ -123,8 +128,13 @@ function Explanation({
   const accent = kind === "right" ? "#4ade80" : "#ff5470";
   return (
     <div
-      className="rounded-lg p-4"
-      style={{ borderLeft: `4px solid ${accent}`, background: "rgba(12,10,34,0.5)" }}
+      className="p-4"
+      style={{
+        // A single stepped edge on the left: the colour is the signal, so it
+        // keeps the marker rather than boxing the text in on all four sides.
+        boxShadow: `inset 4px 0 0 ${accent}`,
+        background: "rgba(12,10,34,0.5)",
+      }}
     >
       <p className="text-display text-base font-semibold" style={{ color: accent }}>
         {heading}

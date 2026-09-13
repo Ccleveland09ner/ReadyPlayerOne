@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Hearts } from "@/components/quiz/Hearts";
 import { ProgressPips } from "@/components/quiz/ProgressPips";
 import { QuizRail } from "@/components/quiz/StreakPanel";
@@ -135,13 +135,20 @@ export function QuizPlayer({
                 : on
                   ? "#c7f0d0"
                   : "#eceef8";
-            const border = showCorrect
-              ? "2px solid var(--color-lime-deep)"
+            const edge = showCorrect
+              ? "var(--color-lime-deep)"
               : showWrong
-                ? "2px solid #c0392b"
+                ? "#c0392b"
                 : on
-                  ? "2px solid var(--color-lime-deep)"
-                  : "2px solid #d3d6ec";
+                  ? "var(--color-lime-deep)"
+                  : "#c2c6e2";
+            const badge = showCorrect
+              ? "var(--color-lime-deep)"
+              : showWrong
+                ? "#c0392b"
+                : on
+                  ? "var(--color-lime-deep)"
+                  : "#daddf0";
 
             return (
               <button
@@ -150,25 +157,27 @@ export function QuizPlayer({
                 onClick={() => setPicked(i)}
                 disabled={result !== null || submitting}
                 aria-pressed={on}
-                className="group flex items-center gap-4 rounded-xl px-3 py-3 text-left transition disabled:cursor-default"
-                style={{
-                  background,
-                  border,
-                  boxShadow: on && !result ? "0 0 0 3px rgba(74,222,128,0.25)" : "none",
-                }}
+                className="box-8bit group flex items-center gap-4 px-3 py-3 text-left transition disabled:cursor-default"
+                style={
+                  {
+                    "--box-bg": background,
+                    "--box-edge": edge,
+                    // A light panel needs its highlight and shade inverted:
+                    // white-on-parchment reads as glare, not as a bevel.
+                    "--box-hi": "rgba(255,255,255,0.85)",
+                    "--box-lo": "rgba(0,0,0,0.12)",
+                  } as CSSProperties
+                }
               >
                 <span
-                  className="text-display flex h-11 w-11 items-center justify-center rounded-md text-xl font-bold"
-                  style={{
-                    background: showCorrect
-                      ? "var(--color-lime-deep)"
-                      : showWrong
-                        ? "#c0392b"
-                        : on
-                          ? "var(--color-lime-deep)"
-                          : "#daddf0",
-                    color: showCorrect || showWrong || on ? "#fff" : "#5a5588",
-                  }}
+                  className="chip-8bit text-display flex h-11 w-11 items-center justify-center text-xl font-bold"
+                  style={
+                    {
+                      "--chip-bg": badge,
+                      "--chip-edge": badge,
+                      color: showCorrect || showWrong || on ? "#fff" : "#5a5588",
+                    } as CSSProperties
+                  }
                 >
                   {option.label}
                 </span>

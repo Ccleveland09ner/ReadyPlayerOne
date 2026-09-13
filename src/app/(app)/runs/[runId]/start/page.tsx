@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BranchIcon, CodeIcon, DocIcon, Play } from "@/components/ui/Icons";
@@ -27,7 +28,17 @@ export default async function StartPage({ params }: PageProps<"/runs/[runId]/sta
         <p className="text-display text-4xl font-bold text-[#6d4aff] sm:text-5xl">start?</p>
       </div>
 
-      <div className="mx-auto mt-8 max-w-xl overflow-hidden rounded-xl" style={{ border: "2px solid #c8cbe6" }}>
+      <div
+        className="box-8bit mx-auto mt-8 max-w-xl overflow-hidden"
+        style={
+          {
+            "--box-bg": "transparent",
+            "--box-edge": "#c2c6e2",
+            "--box-hi": "rgba(255,255,255,0.85)",
+            "--box-lo": "rgba(0,0,0,0.12)",
+          } as CSSProperties
+        }
+      >
         {rows.map(({ Icon, label, value }, i) => (
           <div
             key={label}
@@ -37,7 +48,10 @@ export default async function StartPage({ params }: PageProps<"/runs/[runId]/sta
               background: i % 2 ? "#e9ebf7" : "#f2f3fb",
             }}
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-md bg-[#dfe2f4] text-xl text-[#6d4aff]">
+            <span
+              className="chip-8bit flex h-11 w-11 items-center justify-center text-xl text-[#6d4aff]"
+              style={{ "--chip-bg": "#dfe2f4", "--chip-edge": "#c2c6e2" } as CSSProperties}
+            >
               <Icon />
             </span>
             <span className="text-display w-32 text-lg font-semibold text-[#43406b]">{label}</span>
