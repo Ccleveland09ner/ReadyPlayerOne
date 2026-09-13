@@ -96,7 +96,7 @@ export default async function CompletePage({ params }: PageProps<"/runs/[runId]/
         <Link href={`/runs/${runId}/start`} className="btn-pixel btn-ghost">
           TRY AGAIN
         </Link>
-        <Link href="/" className="btn-pixel btn-gold">
+        <Link href="/home" className="btn-pixel btn-gold">
           BACK HOME
         </Link>
       </div>

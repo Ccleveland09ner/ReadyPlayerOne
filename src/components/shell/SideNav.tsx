@@ -22,7 +22,7 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { href: "/", label: "Home", Icon: HomeIcon, match: ["/"] },
+  { href: "/home", label: "Home", Icon: HomeIcon, match: ["/home"] },
   { href: "/history", label: "History", Icon: ClockIcon, match: ["/history"] },
   { href: "/runs", label: "Quiz", Icon: GamepadIcon, match: ["/runs"] },
   { href: "/report", label: "Report", Icon: ChartIcon, match: ["/report"] },
@@ -47,7 +47,7 @@ export function SideNav({ quizHref }: { quizHref: string }) {
       }
     >
       <div className="px-1 pt-1">
-        <Link href="/" aria-label="ReadyPlayerOne home">
+        <Link href="/home" aria-label="ReadyPlayerOne home">
           <Logo />
         </Link>
       </div>

@@ -11,7 +11,7 @@ import { SignupForm } from "./signup-form";
  * shown a form that would fail with "already registered".
  */
 export default async function SignupPage() {
-  if (await currentUser()) redirect("/");
+  if (await currentUser()) redirect("/home");
 
   return (
     <AuthBackdrop>

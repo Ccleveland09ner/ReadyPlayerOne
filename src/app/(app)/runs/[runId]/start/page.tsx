@@ -47,7 +47,7 @@ export default async function StartPage({ params }: PageProps<"/runs/[runId]/sta
       </div>
 
       <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-        <Link href="/" className="btn-pixel btn-ghost-light">
+        <Link href="/home" className="btn-pixel btn-ghost-light">
           CHANGE REPOSITORY
         </Link>
         <Link href={`/runs/${runId}`} className="btn-pixel btn-gold">

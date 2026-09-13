@@ -57,7 +57,7 @@ export function OtpLoginForm() {
       setError(error.message);
       return;
     }
-    router.push("/");
+    router.push("/home");
     router.refresh();
   }
 

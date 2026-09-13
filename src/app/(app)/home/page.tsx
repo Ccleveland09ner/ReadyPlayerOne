@@ -1,7 +1,7 @@
 import { Panel } from "@/components/ui/Panel";
 import { RepoEntryForm } from "./repo-entry-form";
 
-/** Screen 4 — Home, repo entry. */
+/** Screen 4 — Home, repo entry. Lives at /home; `/` is the landing page. */
 export default function HomePage() {
   return (
     <Panel tone="light" className="max-w-3xl p-8 sm:p-12">

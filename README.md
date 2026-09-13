@@ -23,12 +23,13 @@ The pipeline works end to end against real repositories.
 | Question generation, citation verification | Built |
 | Answer scoring, run persistence, history, report | Built |
 | Mastery tiers, XP and level derivation | Built |
-| Accounts (sign-up / sign-in forms) | **Server side done, forms not wired** |
+| Accounts — sign up, sign in, claim anonymous runs | Built |
 
-The auth forms at `/login` and `/signup` are still presentational — they push to
-`/` without creating a session. Everything behind them works and is tested
-(`scripts/verify-auth.mjs`): password sign-in, claiming a browser's anonymous
-runs on first sign-in, profile RLS. Wiring the two forms is the remaining step.
+Accounts are optional: anonymous play is the demo path, runs save to the
+browser, and signing in later claims them. **This Supabase project has email
+confirmation enabled**, so sign-up ends with "check your email" rather than a
+session — turn *Confirm email* off under Authentication → Providers → Email if
+you want sign-up to land straight on `/home`.
 
 **Verified against 50 public repositories.** 36 completed end to end on the
 first pass; the failures drove four real fixes (see
@@ -50,7 +51,7 @@ actual quiz you need the keys in [Configuration](#configuration).
 ```bash
 npm run build          # next build
 npm run lint           # eslint
-npm test               # vitest, 104 tests
+npm test               # vitest, 123 tests
 npx tsc --noEmit       # type check (run a build first — Next generates route types)
 ```
 
@@ -60,15 +61,17 @@ These run against a live Supabase project and are the fastest way to know the
 backend is healthy. The last three spend money; the first two do not.
 
 ```bash
-node scripts/verify-backend.mjs              # 22 checks: schema, RLS, cache key, vector retrieval
-node scripts/verify-auth.mjs                 # 8 checks: sign-up, sign-in, claim-on-sign-in, profile RLS
-node scripts/verify-screens.mjs <baseUrl>    # 25 checks: history, report, results, review, HUD
-node scripts/smoke-run.mjs <repo> <baseUrl>  # one repo end to end, prints every question + citation
-node scripts/batch-test.mjs <list> <baseUrl> # many repos, reports the distribution of outcomes
+node scripts/verify-backend.mjs               # 22 checks: schema, RLS, cache key, vector retrieval
+node scripts/verify-auth.mjs                  # 8 checks: sign-up, sign-in, claim-on-sign-in, profile RLS
+node scripts/verify-auth-flow.mjs <baseUrl>   # 15 checks: the app's response to a session
+node scripts/verify-screens.mjs <baseUrl>     # 25 checks: history, report, results, review, HUD
+node scripts/smoke-run.mjs <repo> <baseUrl>   # one repo end to end, every question + citation
+node scripts/simulate-user.mjs <repo> <base>  # the whole journey, landing to logout
+node scripts/batch-test.mjs <list> <baseUrl>  # many repos, the distribution of outcomes
 ```
 
-`verify-screens` seeds its own rows and deletes them; `smoke-run` and
-`batch-test` leave real runs behind.
+`verify-*` scripts clean up after themselves. `smoke-run`, `simulate-user` and
+`batch-test` spend real money on embeddings and generation.
 
 ## Structure
 
@@ -79,11 +82,11 @@ src/
 │   ├── globals.css                 palette, 8-bit primitives, pixel type
 │   │
 │   ├── (auth)/                     full-bleed, no dashboard chrome
-│   │   ├── splash/                 landing — Three.js rocket hero
-│   │   ├── login/  signup/         presentational for now
+│   │   ├── page.tsx                `/` — the landing screen, rocket hero
+│   │   ├── login/  signup/         wired to Supabase via server actions
 │   │
 │   ├── (app)/                      everything inside the game shell
-│   │   ├── page.tsx                Home — repo entry
+│   │   ├── home/                   `/home` — repo entry
 │   │   ├── history/ report/ settings/
 │   │   └── runs/[runId]/
 │   │       ├── page.tsx            Ingesting — staged progress
@@ -101,6 +104,7 @@ src/
 ├── lib/
 │   ├── types.ts  schemas.ts  env.ts  runs.ts  api.ts  log.ts
 │   ├── retry.ts  ratelimit.ts
+│   ├── auth/                       server actions, session reads, validation
 │   ├── github/                     URL parsing, tree fetch, filtering, caps
 │   ├── index/                      chunking, embedding, retrieval
 │   ├── quiz/                       generation, citation verification, reads
@@ -122,9 +126,9 @@ docs/                               PRD, tech design, deployment, mockups
 
 | Route | Screen |
 |---|---|
-| `/splash` | Landing — rocket hero, `PRESS START` |
-| `/login` `/signup` | Accounts (presentational) |
-| `/` | Home — repo entry |
+| `/` | **Landing** — rocket hero, `PRESS START` |
+| `/login` `/signup` | Accounts |
+| `/home` | Home — repo entry |
 | `/runs/[runId]/start` | Confirm and start |
 | `/runs/[runId]` | Ingesting — staged progress |
 | `/runs/[runId]/quiz` | Quiz — question, options, HUD |
@@ -132,15 +136,18 @@ docs/                               PRD, tech design, deployment, mockups
 | `/runs/[runId]/answers` | Answer Review |
 | `/history` `/report` `/settings` | |
 
-**First visits are routed through the landing screen.** `proxy.ts` redirects any
-browser without the `rpo_seen` cookie to `/splash`, so the order is landing →
-log in → Home. `/splash`, `/login`, `/signup`, `/logout` and `/api` are exempt —
-`/api` deliberately, because the ingestion loop must not be redirected
-mid-run.
+**The landing screen is `/` itself, not a redirect to one.** Opening the site
+shows it; `PRESS START` goes to `/login`; signing in lands on `/home`. A
+browser that has not seen the landing screen and has no session is redirected
+to `/` from anywhere else, so the intended order holds without the URL lying
+about which screen you are on.
 
-The gate is on a cookie rather than a session on purpose: the auth forms do not
-create sessions yet, so gating on a Supabase user would bounce visitors back to
-the landing screen forever. Swap it when the forms are wired.
+`/`, `/login`, `/signup`, `/logout` and `/api` are exempt from that redirect.
+`/api` deliberately: the ingestion loop must never be redirected mid-run.
+
+A signed-in visitor always passes, so a bookmarked `/history` opened in a new
+browser goes straight there rather than being introduced to a product they
+already use.
 
 ## How it works
 

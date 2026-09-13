@@ -126,7 +126,7 @@ try {
   check("/login still renders for a signed-out visitor", loginAnon.status === 200);
 
   // --- the HUD reflects the session ----------------------------------------
-  const home = await get("/", `rpo_seen=1; ${authed}`);
+  const home = await get("/home", `rpo_seen=1; ${authed}`);
   const homeText = textOf(await home.text());
   check(
     "HUD shows the signed-in display name",
@@ -138,7 +138,7 @@ try {
     !homeText.includes("Player_Intern"),
   );
 
-  const anonHome = await get("/", `rpo_seen=1; rpo_aid=${anonId}`);
+  const anonHome = await get("/home", `rpo_seen=1; rpo_aid=${anonId}`);
   const anonText = textOf(await anonHome.text());
   check(
     "anonymous play still works and keeps the default name",
@@ -205,7 +205,7 @@ try {
       (loggedOut.headers.get("location") ?? "").includes("/login"),
   );
 
-  const afterLogout = await get("/", `rpo_seen=1; rpo_aid=${anonId}`);
+  const afterLogout = await get("/home", `rpo_seen=1; rpo_aid=${anonId}`);
   check(
     "after logout the signed-in name is gone",
     !textOf(await afterLogout.text()).includes(displayName),

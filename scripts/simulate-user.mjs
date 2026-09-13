@@ -94,11 +94,11 @@ try {
   const first = await visit("/");
   say(
     "Opens the app for the first time",
-    `GET / → ${first.status} → ${first.headers.get("location") ?? ""}  (sent to the landing screen)`,
+    `GET / → ${first.status}  (the landing screen itself, no redirect)`,
   );
 
   // 2. Landing.
-  const splash = await visit("/splash");
+  const splash = await visit("/");
   const splashText = textOf(await splash.text());
   say(
     "Sees the landing screen",
@@ -173,7 +173,7 @@ try {
   );
 
   // 6. Home.
-  const home = await visit("/");
+  const home = await visit("/home");
   const homeText = textOf(await home.text());
   say(
     "Lands on Home",

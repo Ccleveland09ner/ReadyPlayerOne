@@ -12,7 +12,7 @@ import { LoginForm } from "./login-form";
  * boundary.
  */
 export default async function LoginPage() {
-  if (await currentUser()) redirect("/");
+  if (await currentUser()) redirect("/home");
 
   return (
     <AuthBackdrop>

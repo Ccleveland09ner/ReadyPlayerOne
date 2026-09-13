@@ -102,8 +102,11 @@ to the landing screen.
 Open prefixes -- reachable without the `rpo_seen` cookie:
 
 ```
-/splash  /login  /signup  /logout  /api
+/  /login  /signup  /logout  /api
 ```
+
+`/` is the landing screen itself; everything else in the app lives below
+`/home`.
 
 **`/api` being exempt is load-bearing, not incidental.** Ingestion is a client
 orchestrated loop of `POST /api/runs/:id/index` calls; if those were gated, a
@@ -123,7 +126,7 @@ Supabase project, first request to each route:
 
 | Route | Cold | Notes |
 |---|---|---|
-| `GET /splash` | ~8ms | Static, no database |
+| `GET /` (landing) | ~8ms | Static, no database |
 | `GET /report` | ~120ms | One grouped query |
 | `GET /history` | ~1.0s | First database round trip pays connection setup |
 | `POST /api/runs` | ~0.9–1.2s | Two GitHub calls plus the tree fetch |

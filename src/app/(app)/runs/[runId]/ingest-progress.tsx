@@ -166,7 +166,7 @@ export function IngestProgress({
           <p className="text-display text-base font-medium text-[#ff5470]">{error}</p>
           <button
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/home")}
             className="btn-pixel btn-ghost mt-4"
           >
             TRY ANOTHER REPOSITORY

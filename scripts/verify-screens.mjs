@@ -42,7 +42,7 @@ const check = (name, ok, detail = "") => {
 
 const anonId = crypto.randomUUID();
 // rpo_seen is what proxy.ts uses to decide a browser has already been shown
-// the landing screen. Without it every page below 307s to /splash and the
+// the landing screen. Without it every page below 307s to / and the
 // assertions all fail against a redirect body rather than the screen.
 const cookie = `rpo_aid=${anonId}; rpo_seen=1`;
 const runIds = [];

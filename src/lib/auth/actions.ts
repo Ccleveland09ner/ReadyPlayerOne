@@ -83,7 +83,7 @@ export async function signInAction(
 
   if (data.user) await claimQuietly(data.user.id);
 
-  redirect("/");
+  redirect("/home");
 }
 
 export async function signUpAction(
@@ -127,7 +127,7 @@ export async function signUpAction(
     await claimQuietly(data.user.id);
   }
 
-  redirect("/");
+  redirect("/home");
 }
 
 /**

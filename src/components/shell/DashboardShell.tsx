@@ -32,7 +32,7 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen w-full bg-[#100c26]">
       <BackgroundPixelStars />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1280px] flex-col lg:flex-row">
-        <SideNav quizHref={current ? `/runs/${current.runId}/start` : "/"} />
+        <SideNav quizHref={current ? `/runs/${current.runId}/start` : "/home"} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopBar
             owner={current?.owner ?? null}
