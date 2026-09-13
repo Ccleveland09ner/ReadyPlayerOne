@@ -276,8 +276,9 @@ numbers. Nothing logs secrets or repository file contents.
 5. Environment variables set in Vercel, all three environments ticked
 6. Push to `main` → Vercel builds
 7. Against the deployment: `node scripts/verify-screens.mjs <url>`,
-   `verify-auth-flow.mjs <url>` and `verify-repo-selector.mjs <url>`. All three
-   seed their own rows and clean up, and none of them spend model credits
+   `verify-auth-flow.mjs <url>`, `verify-repo-selector.mjs <url>` and
+   `verify-retake.mjs <url>`. All four seed their own rows and clean up, and
+   none of them spend model credits
 8. `node scripts/smoke-run.mjs <repo> <url>` once, to prove the paid path works
    where it will actually run
 9. Warm the demo repositories on production so the snapshot cache is populated

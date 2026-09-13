@@ -69,6 +69,7 @@ node scripts/verify-auth.mjs                  # 8 checks: sign-up, sign-in, clai
 node scripts/verify-auth-flow.mjs <baseUrl>   # 15 checks: the app's response to a session
 node scripts/verify-screens.mjs <baseUrl>     # 25 checks: history, report, results, review, HUD
 node scripts/verify-repo-selector.mjs <base>  # 7 checks: the top-bar dropdown and what it starts
+node scripts/verify-retake.mjs <baseUrl>      # 14 checks: Try Again makes a real new attempt
 node scripts/smoke-run.mjs <repo> <baseUrl>   # one repo end to end, every question + citation
 node scripts/simulate-user.mjs <repo> <base>  # the whole journey, landing to logout
 node scripts/batch-test.mjs <list> <baseUrl>  # many repos, the distribution of outcomes
@@ -157,16 +158,27 @@ already use.
 
 ### Replaying a repository
 
-The repository chip in the top bar is a dropdown of your three most recent
-repositories. Picking one starts a **new** run against it and drops you at
-`/runs/:id/start` — the ordinary confirm → ingest → quiz path, not a replay of
-the old run, which is already answered.
+Three places start a run — the form on `/home`, the repository chip in the top
+bar, and **Try Again** on the results screen — and all three mean the same
+thing: a **new** run. A finished run's URL is a record, not a game; its
+questions are answered and its explanations are on screen.
+
+- **The top-bar chip** is a dropdown of your three most recent repositories.
+  Picking one lands on `/runs/:id/start`, the ordinary confirm → ingest → quiz
+  path.
+- **Try Again** skips the confirm screen and goes straight to `/runs/:id` —
+  you confirmed this repository a minute ago, so *again* should mean again.
 
 That sounds expensive and is not. The snapshot cache is keyed on the commit
-SHA, so a repository you have already read comes back in about a second with
-no re-ingestion. If the repository has moved on since, the SHA differs, the
-cache misses and it indexes again — which is correct, because a question has
-to describe the commit it was generated from.
+SHA, so a repeat reuses the chunks and the manifest and regenerates only the
+five questions: one model call, and a retake is a *different* quiz on the same
+commit rather than the one whose answers you have just read. If the repository
+has moved on since, the SHA differs, the cache misses and it indexes again —
+which is correct, because a question has to describe the commit it was
+generated from.
+
+All three go through `startRun()` in `src/lib/api-client.ts`, which is the only
+way the browser creates a run.
 
 ## How it works
 

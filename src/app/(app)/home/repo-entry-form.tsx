@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type CSSProperties } from "react";
 import { BranchIcon, Play } from "@/components/ui/Icons";
-import { errorMessage } from "@/lib/api-client";
+import { startRun } from "@/lib/api-client";
 
 /**
  * Posts to /api/runs, which resolves the commit SHA and returns a run id.
@@ -23,22 +23,14 @@ export function RepoEntryForm() {
     setError(null);
 
     try {
-      const response = await fetch("/api/runs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl: repo }),
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        setError(errorMessage(payload, "Could not read that repository."));
-        setSubmitting(false);
-        return;
-      }
-
-      router.push(`/runs/${payload.runId}/start`);
-    } catch {
-      setError("Could not reach the server. Check your connection.");
+      const { runId } = await startRun(repo);
+      router.push(`/runs/${runId}/start`);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not read that repository.",
+      );
       setSubmitting(false);
     }
   }

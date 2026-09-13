@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { BranchIcon, ChevronDown } from "@/components/ui/Icons";
-import { errorMessage } from "@/lib/api-client";
+import { startRun } from "@/lib/api-client";
 
 export type RecentRepo = { owner: string; repo: string; runId: string };
 
@@ -61,24 +61,16 @@ export function RepoSelector({
     setError(null);
 
     try {
-      const response = await fetch("/api/runs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl: `${target.owner}/${target.repo}` }),
-      });
-      const payload = await response.json();
-
-      if (!response.ok) {
-        setError(errorMessage(payload, "Could not start that repository."));
-        setStarting(null);
-        return;
-      }
-
+      const { runId } = await startRun(`${target.owner}/${target.repo}`);
       setOpen(false);
-      router.push(`/runs/${payload.runId}/start`);
+      router.push(`/runs/${runId}/start`);
       router.refresh();
-    } catch {
-      setError("Could not reach the server.");
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not start that repository.",
+      );
       setStarting(null);
     }
   }

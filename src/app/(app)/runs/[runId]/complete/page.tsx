@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TryAgainButton } from "@/components/quiz/TryAgainButton";
 import { Check, Cross, Trophy } from "@/components/ui/Icons";
 import { MasteryBar } from "@/components/ui/MasteryBar";
 import { Panel, SubPanel } from "@/components/ui/Panel";
@@ -15,7 +16,7 @@ export default async function CompletePage({ params }: PageProps<"/runs/[runId]/
   const results = await loadResults(runId);
   if (!results) notFound();
 
-  const { score, total, breakdown, topicsPassed } = results;
+  const { run, score, total, breakdown, topicsPassed } = results;
   const percent = percentFor(score, total);
 
   return (
@@ -89,14 +90,11 @@ export default async function CompletePage({ params }: PageProps<"/runs/[runId]/
         </SubPanel>
       </div>
 
-      <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+      <div className="mt-7 flex flex-col flex-wrap justify-center gap-3 sm:flex-row">
         <Link href={`/runs/${runId}/answers`} className="btn-pixel btn-8bit btn-grape">
           VIEW ANSWERS
         </Link>
-        {/* TODO: Try Again creates a new run against the cached snapshot. */}
-        <Link href={`/runs/${runId}/start`} className="btn-pixel btn-8bit btn-ghost">
-          TRY AGAIN
-        </Link>
+        <TryAgainButton owner={run.owner} repo={run.repo} />
         <Link href="/home" className="btn-pixel btn-8bit btn-gold">
           BACK HOME
         </Link>

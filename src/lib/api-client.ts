@@ -43,6 +43,22 @@ export function errorCode(payload: unknown): string | null {
   return null;
 }
 
+/**
+ * Starts a run against a repository, and is the ONLY way the browser does so.
+ *
+ * Every entry point funnels through here -- the home form, the top-bar
+ * selector and Try Again -- because "play this repo" always means a new run,
+ * never a revisit of an old one. A finished run's questions are answered; its
+ * URL is a record, not a game. The snapshot cache keyed on commit SHA is what
+ * makes a repeat cheap: chunks are reused, only the five questions are
+ * generated again, so a retake is a different quiz on the same commit.
+ */
+export type StartedRun = { runId: string; cached: boolean };
+
+export function startRun(repoUrl: string): Promise<StartedRun> {
+  return postJson<StartedRun>("/api/runs", { repoUrl });
+}
+
 /** POSTs JSON and throws the envelope's message on failure. */
 export async function postJson<T>(path: string, body: unknown = {}): Promise<T> {
   const response = await fetch(path, {
