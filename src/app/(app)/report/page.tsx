@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
   Arrow,
+  BranchIcon,
   Bulb,
   ChartIcon,
   ChevronDown,
@@ -105,7 +106,7 @@ export default async function ReportPage() {
                 {report.recent.map((r) => (
                   <div key={r.runId} className="text-pixel grid grid-cols-[1fr_100px_90px_auto] items-center gap-2 text-[10px] tracking-wide">
                     <span className="truncate text-white">
-                      ⑂ {r.owner}/{r.repo}
+                      <BranchIcon className="mr-1" /> {r.owner}/{r.repo}
                     </span>
                     <span className="text-[#8fa0e6]">
                       {dateFormat.format(new Date(r.createdAt))}

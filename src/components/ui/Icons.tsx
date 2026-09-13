@@ -1,116 +1,506 @@
-// Small inline pixel-flavored icons. Kept stroke-based so they scale crisply
-// alongside the pixel type without shipping an icon dependency.
+import type { ReactNode } from "react";
+
+// Pixel-art icon set. Every glyph is a 12x12 string map rather than stroke
+// geometry, so the icons are built from the same square blocks as the panels
+// and buttons instead of the round-capped vectors the rest of the web uses.
+// "." is a hole; every other character is a drawn cell. Holes are transparent
+// rather than a second fill, so a cut-out (the clock hands, the envelope flap)
+// reads correctly on whatever surface the icon sits on.
 type P = { className?: string };
+
 const base = "inline-block align-middle";
 
-export const HomeIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /><path d="M9 20v-6h6v6" />
-  </svg>
-);
-export const ClockIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
-  </svg>
-);
-export const GamepadIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="10" rx="4" /><path d="M7 11v2M6 12h2M15 11h.01M18 13h.01" />
-  </svg>
-);
-export const ChartIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-  </svg>
-);
-export const GearIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3.2" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" />
-  </svg>
-);
-export const BranchIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="6" cy="6" r="2.4" /><circle cx="6" cy="18" r="2.4" /><circle cx="18" cy="8" r="2.4" /><path d="M6 8.4v7.2M18 10.4c0 4-3 4-6 4.6" />
-  </svg>
-);
-export const CodeIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 8l-4 4 4 4M15 8l4 4-4 4" />
-  </svg>
-);
-export const DocIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4M9 12h6M9 16h6" />
-  </svg>
-);
-export const ChevronDown = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 9l6 6 6-6" />
-  </svg>
-);
-export const Check = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 12l5 5L20 6" />
-  </svg>
-);
-export const Cross = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M6 6l12 12M18 6L6 18" />
-  </svg>
-);
-export const MailIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" />
-  </svg>
-);
-export const LockIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="4" y="10" width="16" height="10" rx="2" /><path d="M8 10V7a4 4 0 018 0v3" />
-  </svg>
-);
-export const UserIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
-  </svg>
-);
-export const TargetIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.4" />
-  </svg>
-);
-export const Arrow = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 12h14M13 6l6 6-6 6" />
-  </svg>
-);
-export const LogoutIcon = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10 4H6v16h4M10 12h10M16 8l4 4-4 4" />
-  </svg>
-);
-export const Play = ({ className }: P) => (
-  <svg viewBox="0 0 24 24" className={`${base} ${className ?? ""}`} width="1em" height="1em" fill="currentColor">
-    <path d="M7 5l12 7-12 7z" />
-  </svg>
+/** Per-character fills. Anything unmapped takes the inherited text colour. */
+type Palette = Record<string, string>;
+
+function PixelIcon({
+  art,
+  colors,
+  className,
+  label,
+}: P & { art: string[]; colors?: Palette; label?: string }) {
+  const height = art.length;
+  const width = art.reduce((widest, row) => Math.max(widest, row.length), 0);
+
+  // Horizontal runs of the same character collapse into one <rect>, which keeps
+  // a glyph at a dozen nodes instead of ~90 single-pixel squares.
+  const cells: ReactNode[] = [];
+  art.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      if (ch === ".") {
+        x += 1;
+        continue;
+      }
+      let run = 1;
+      while (row[x + run] === ch) run += 1;
+      cells.push(
+        <rect
+          key={`${x}-${y}`}
+          x={x}
+          y={y}
+          width={run}
+          height={1}
+          fill={colors?.[ch] ?? "currentColor"}
+        />,
+      );
+      x += run;
+    }
+  });
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className={`${base} ${className ?? ""}`}
+      width="1em"
+      height="1em"
+      shapeRendering="crispEdges"
+      role={label ? "img" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+    >
+      {cells}
+    </svg>
+  );
+}
+
+const HOME = [
+  "............",
+  ".....##.....",
+  "....####....",
+  "...######...",
+  "..########..",
+  ".##########.",
+  ".##########.",
+  ".###....###.",
+  ".###....###.",
+  ".###....###.",
+  ".###....###.",
+  "............",
+];
+export const HomeIcon = ({ className }: P) => <PixelIcon art={HOME} className={className} />;
+
+const CLOCK = [
+  "............",
+  "...######...",
+  "..########..",
+  ".##########.",
+  ".##########.",
+  ".####.#####.",
+  ".####.#####.",
+  ".####...###.",
+  ".##########.",
+  "..########..",
+  "...######...",
+  "............",
+];
+export const ClockIcon = ({ className }: P) => <PixelIcon art={CLOCK} className={className} />;
+
+const GAMEPAD = [
+  "............",
+  "............",
+  "............",
+  "..########..",
+  ".##########.",
+  "###.#####.##",
+  "##...#######",
+  "###.####.###",
+  ".##########.",
+  "..##....##..",
+  "............",
+  "............",
+];
+export const GamepadIcon = ({ className }: P) => <PixelIcon art={GAMEPAD} className={className} />;
+
+const CHART = [
+  "............",
+  "............",
+  ".....##.....",
+  ".....##.....",
+  ".....##..##.",
+  ".....##..##.",
+  ".##..##..##.",
+  ".##..##..##.",
+  ".##..##..##.",
+  ".##..##..##.",
+  "############",
+  "............",
+];
+export const ChartIcon = ({ className }: P) => <PixelIcon art={CHART} className={className} />;
+
+const GEAR = [
+  "...##..##...",
+  "...##..##...",
+  ".##########.",
+  ".##########.",
+  "####....####",
+  "####....####",
+  "####....####",
+  "####....####",
+  ".##########.",
+  ".##########.",
+  "...##..##...",
+  "...##..##...",
+];
+export const GearIcon = ({ className }: P) => <PixelIcon art={GEAR} className={className} />;
+
+const BRANCH = [
+  "............",
+  ".###....###.",
+  ".###....###.",
+  ".###....###.",
+  "..##....##..",
+  "..##....##..",
+  "..##...###..",
+  "..##..###...",
+  "..#####.....",
+  ".###........",
+  ".###........",
+  ".###........",
+];
+export const BranchIcon = ({ className }: P) => <PixelIcon art={BRANCH} className={className} />;
+
+const CODE = [
+  "............",
+  "............",
+  "............",
+  "....##..##..",
+  "...##....##.",
+  "..##......##",
+  "..##......##",
+  "...##....##.",
+  "....##..##..",
+  "............",
+  "............",
+  "............",
+];
+export const CodeIcon = ({ className }: P) => <PixelIcon art={CODE} className={className} />;
+
+const DOC = [
+  "............",
+  "..######....",
+  "..#######...",
+  "..########..",
+  "..########..",
+  "..##....##..",
+  "..########..",
+  "..##....##..",
+  "..########..",
+  "..##....##..",
+  "..########..",
+  "............",
+];
+export const DocIcon = ({ className }: P) => <PixelIcon art={DOC} className={className} />;
+
+const CHEVRON = [
+  "............",
+  "............",
+  "............",
+  ".##......##.",
+  "..##....##..",
+  "...##..##...",
+  "....####....",
+  ".....##.....",
+  "............",
+  "............",
+  "............",
+  "............",
+];
+export const ChevronDown = ({ className }: P) => <PixelIcon art={CHEVRON} className={className} />;
+
+const CHECK = [
+  "............",
+  "............",
+  "..........##",
+  ".........##.",
+  "........##..",
+  ".##....##...",
+  ".###..##....",
+  "..#####.....",
+  "...####.....",
+  "....##......",
+  "............",
+  "............",
+];
+export const Check = ({ className }: P) => <PixelIcon art={CHECK} className={className} />;
+
+const CROSS = [
+  "............",
+  "............",
+  ".##......##.",
+  ".###....###.",
+  "..###..###..",
+  "...######...",
+  "....####....",
+  "...######...",
+  "..###..###..",
+  ".###....###.",
+  ".##......##.",
+  "............",
+];
+export const Cross = ({ className }: P) => <PixelIcon art={CROSS} className={className} />;
+
+const MAIL = [
+  "............",
+  "............",
+  "............",
+  "############",
+  "#.########.#",
+  "##.######.##",
+  "###.####.###",
+  "####.##.####",
+  "#####..#####",
+  "############",
+  "############",
+  "............",
+];
+export const MailIcon = ({ className }: P) => <PixelIcon art={MAIL} className={className} />;
+
+const LOCK = [
+  "...######...",
+  "..###..###..",
+  "..##....##..",
+  "..##....##..",
+  "..##....##..",
+  ".##########.",
+  ".##########.",
+  ".####..####.",
+  ".####..####.",
+  ".##########.",
+  ".##########.",
+  "............",
+];
+export const LockIcon = ({ className }: P) => <PixelIcon art={LOCK} className={className} />;
+
+const USER = [
+  "............",
+  "....####....",
+  "...######...",
+  "...######...",
+  "....####....",
+  "............",
+  "..########..",
+  ".##########.",
+  "############",
+  "############",
+  "############",
+  "............",
+];
+export const UserIcon = ({ className }: P) => <PixelIcon art={USER} className={className} />;
+
+const TARGET = [
+  "............",
+  "...######...",
+  ".##......##.",
+  ".#..####..#.",
+  "##.##..##.##",
+  "#..#.##.#..#",
+  "#..#.##.#..#",
+  "##.##..##.##",
+  ".#..####..#.",
+  ".##......##.",
+  "...######...",
+  "............",
+];
+export const TargetIcon = ({ className }: P) => <PixelIcon art={TARGET} className={className} />;
+
+const ARROW = [
+  "............",
+  "............",
+  "............",
+  "......##....",
+  ".......##...",
+  ".#########..",
+  ".#########..",
+  ".......##...",
+  "......##....",
+  "............",
+  "............",
+  "............",
+];
+export const Arrow = ({ className }: P) => <PixelIcon art={ARROW} className={className} />;
+
+const LOGOUT = [
+  "............",
+  ".#####......",
+  ".##.........",
+  ".##.........",
+  ".##....##...",
+  ".##.....##..",
+  ".#########..",
+  ".#########..",
+  ".##.....##..",
+  ".##....##...",
+  ".##.........",
+  ".#####......",
+];
+export const LogoutIcon = ({ className }: P) => <PixelIcon art={LOGOUT} className={className} />;
+
+const PLAY = [
+  "............",
+  ".##.........",
+  ".####.......",
+  ".######.....",
+  ".########...",
+  ".##########.",
+  ".##########.",
+  ".########...",
+  ".######.....",
+  ".####.......",
+  ".##.........",
+  "............",
+];
+export const Play = ({ className }: P) => <PixelIcon art={PLAY} className={className} />;
+
+const ARCHIVE = [
+  "............",
+  ".##########.",
+  ".###....###.",
+  ".##########.",
+  "............",
+  ".##########.",
+  ".###....###.",
+  ".##########.",
+  "............",
+  ".##########.",
+  ".###....###.",
+  ".##########.",
+];
+export const ArchiveIcon = ({ className }: P) => <PixelIcon art={ARCHIVE} className={className} />;
+
+const KEY = [
+  "............",
+  "...######...",
+  "...##..##...",
+  "...##..##...",
+  "...######...",
+  ".....##.....",
+  ".....##.....",
+  ".....####...",
+  ".....##.....",
+  ".....####...",
+  ".....##.....",
+  "............",
+];
+export const KeyIcon = ({ className }: P) => <PixelIcon art={KEY} className={className} />;
+
+const INFO = [
+  "............",
+  "...######...",
+  "..########..",
+  ".####..####.",
+  ".####..####.",
+  ".##########.",
+  ".####..####.",
+  ".####..####.",
+  ".####..####.",
+  "..########..",
+  "...######...",
+  "............",
+];
+export const InfoIcon = ({ className }: P) => <PixelIcon art={INFO} className={className} />;
+
+// The four glyphs that used to be emoji. Emoji ship their own vendor artwork --
+// glossy, anti-aliased, and different on every OS -- so they were the one thing
+// on these screens that could not be made to match. Drawn here instead, with a
+// fixed palette rather than currentColor: a heart that inherits the body text
+// colour is no longer a heart.
+const TROPHY = [
+  "............",
+  ".##########.",
+  ".##########.",
+  "############",
+  "#.########.#",
+  "#.########.#",
+  "..########..",
+  "...######...",
+  "....####....",
+  ".....##.....",
+  "...dddddd...",
+  "..dddddddd..",
+];
+export const Trophy = ({ className }: P) => (
+  <PixelIcon
+    art={TROPHY}
+    colors={{ "#": "#ffc23c", d: "#d98a24" }}
+    className={className}
+    label="trophy"
+  />
 );
 
-// Emoji glyphs — no stroke geometry, so they just carry the class through.
-export const Trophy = ({ className }: P) => (
-  <span className={`${base} ${className ?? ""}`} role="img" aria-label="trophy">🏆</span>
-);
+const FLAME = [
+  "............",
+  ".....##.....",
+  "....####....",
+  "....####....",
+  "...######...",
+  "..###cc###..",
+  ".###cccc###.",
+  ".##cccccc##.",
+  ".##cccccc##.",
+  ".###cccc###.",
+  "..########..",
+  "............",
+];
 export const Flame = ({ className }: P) => (
-  <span className={`${base} ${className ?? ""}`} role="img" aria-label="streak">🔥</span>
+  <PixelIcon
+    art={FLAME}
+    colors={{ "#": "#ff7a1a", c: "#ffd23c" }}
+    className={className}
+    label="streak"
+  />
 );
+
+const BULB = [
+  "............",
+  "....####....",
+  "...######...",
+  "..hh######..",
+  "..########..",
+  "..########..",
+  "...######...",
+  "....####....",
+  "...dddddd...",
+  "....dddd....",
+  "....dddd....",
+  "............",
+];
 export const Bulb = ({ className }: P) => (
-  <span className={`${base} ${className ?? ""}`} role="img" aria-label="hint">💡</span>
+  <PixelIcon
+    art={BULB}
+    colors={{ "#": "#ffd23c", h: "#fff3b0", d: "#a8791d" }}
+    className={className}
+    label="hint"
+  />
 );
+
+// The one sprite drawn with its own outline ("o"): hearts are the HUD, and a
+// heart has to stay legible both as a solid and as the empty slot it leaves
+// behind. Spending one keeps the outline and drops the fill, which is how an
+// arcade life counter reads -- rather than greying the whole silhouette, where
+// "dim red" and "you have lost this one" look like the same thing.
+const HEART = [
+  "..oo....oo..",
+  ".o##o..o##o.",
+  "ohh##oo####o",
+  "ohh########o",
+  "o##########o",
+  "o##########o",
+  ".o########o.",
+  "..o######o..",
+  "...o####o...",
+  "....o##o....",
+  ".....oo.....",
+  "............",
+];
+const HEART_FULL = { "#": "#ff3b5c", h: "#ff8fa3", o: "#7a1027" };
+const HEART_SPENT = { "#": "transparent", h: "transparent", o: "#aeb2cf" };
 export const Heart = ({ filled = true, className }: P & { filled?: boolean }) => (
-  <span
-    className={`${base} ${className ?? ""}`}
-    role="img"
-    aria-label={filled ? "heart remaining" : "heart lost"}
-    style={filled ? undefined : { filter: "grayscale(1)", opacity: 0.35 }}
-  >
-    ❤️
-  </span>
+  <PixelIcon
+    art={HEART}
+    colors={filled ? HEART_FULL : HEART_SPENT}
+    className={className}
+    label={filled ? "heart remaining" : "heart lost"}
+  />
 );

@@ -199,7 +199,10 @@ export async function loadReview(runId: string): Promise<Review | null> {
   return { run, questions };
 }
 
-/** Repos this player has run, for the top-bar selector. */
+/** How many distinct repositories the top-bar selector offers. */
+export const RECENT_REPO_LIMIT = 3;
+
+/** The most recent repos this player has run, for the top-bar selector. */
 export async function recentRepos(
   anonId: string | null,
   userId: string | null,
@@ -228,7 +231,7 @@ export async function recentRepos(
     if (seen.has(key)) continue;
     seen.add(key);
     repos.push({ owner: row.owner, repo: row.repo, runId: row.id });
-    if (repos.length >= 5) break;
+    if (repos.length >= RECENT_REPO_LIMIT) break;
   }
 
   return repos;

@@ -31,7 +31,7 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
             EVERY CITATION IS PINNED TO THE COMMIT THAT WAS INGESTED.
           </p>
         </div>
-        <Link href={`/runs/${runId}/complete`} className="btn-pixel btn-ghost !px-3 !py-2 !text-[9px]">
+        <Link href={`/runs/${runId}/complete`} className="btn-pixel btn-8bit btn-ghost !px-3 !py-2 !text-[9px]">
           BACK TO RESULTS
         </Link>
       </div>
@@ -62,7 +62,7 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
                   <span className="text-pixel text-[9px] tracking-wide text-[#8fa0e6]">
                     Q{qi + 1} · {TOPIC_LABELS[question.topic].toUpperCase()}
                   </span>
-                  <h2 className="text-display mt-2 text-xl font-semibold text-white">
+                  <h2 className="text-pixel mt-2 text-xs leading-[1.8] text-white">
                     {question.prompt}
                   </h2>
                 </div>
@@ -85,7 +85,7 @@ export default async function AnswersPage({ params }: PageProps<"/runs/[runId]/a
                 ) : null}
 
                 {question.selectedIndex === null ? (
-                  <p className="text-display text-sm text-[#b7b2e6]">
+                  <p className="text-pixel text-[10px] leading-[1.9] text-[#b7b2e6]">
                     You did not answer this question.
                   </p>
                 ) : null}
@@ -136,10 +136,10 @@ function Explanation({
         background: "rgba(12,10,34,0.5)",
       }}
     >
-      <p className="text-display text-base font-semibold" style={{ color: accent }}>
+      <p className="text-pixel text-[10px] leading-[1.9]" style={{ color: accent }}>
         {heading}
       </p>
-      <p className="text-display mt-2 text-sm text-[#cbc6f0]">{body}</p>
+      <p className="text-pixel mt-2 text-[10px] leading-[1.9] text-[#cbc6f0]">{body}</p>
       <div className="mt-3">
         {citation ? (
           <CitationLink

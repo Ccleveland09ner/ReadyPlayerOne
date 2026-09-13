@@ -1,11 +1,10 @@
 @import "tailwindcss";
 
 /* Fonts are loaded by next/font in src/app/layout.tsx, which exposes
-   --font-press-start / --font-fredoka / --font-nunito. `inline` is required
+   --font-press-start / --font-nunito. `inline` is required
    for tokens whose values reference other CSS variables. */
 @theme inline {
   --font-pixel: var(--font-press-start), monospace;
-  --font-display: var(--font-fredoka), system-ui, sans-serif;
   --font-body: var(--font-nunito), system-ui, sans-serif;
 }
 
@@ -301,10 +300,9 @@ body {
     inset -3px -3px 0 rgba(255, 255, 255, 0.07);
 }
 
-/* The square icon block beside each field. The descendant rule wins over the
-   icons' own strokeLinecap/strokeLinejoin attributes, because CSS outranks SVG
-   presentation attributes -- so the strokes go hard-cornered here without
-   touching the shared Icons.tsx used across every other screen. */
+/* The square icon block beside each field. The icons themselves are pixel maps
+   (see Icons.tsx), so nothing here has to square them off -- the chip only has
+   to give them a frame built the same way. */
 .icon-chip-8bit {
   border: none;
   border-radius: 0;
@@ -317,12 +315,6 @@ body {
     inset 2px 2px 0 rgba(255, 255, 255, 0.14),
     inset -2px -2px 0 rgba(0, 0, 0, 0.4);
 }
-.icon-chip-8bit svg {
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-  shape-rendering: crispEdges;
-}
-
 /* Neon dashed grid floor used behind auth screens */
 .grid-floor {
   background-image:
@@ -345,9 +337,6 @@ body {
 
 .text-pixel {
   font-family: var(--font-pixel);
-}
-.text-display {
-  font-family: var(--font-display);
 }
 
 /* The offset magenta drop shadow the pixel headings share. Defined once so the

@@ -40,6 +40,7 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
             username={profile.displayName}
             correct={totals.correct}
             quizzes={totals.quizzes}
+            recent={repos}
           />
           <main className="flex flex-1 items-start justify-center px-3 pb-8 lg:px-6">
             {children}

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
-import { GamepadIcon, UserIcon } from "@/components/ui/Icons";
+import { ArchiveIcon, GamepadIcon, InfoIcon, KeyIcon, UserIcon } from "@/components/ui/Icons";
 import { SubPanel } from "@/components/ui/Panel";
 import { updateProfileAction, type ProfileState } from "@/lib/auth/profile-actions";
 import type { SettingsProfile } from "@/lib/auth/session";
@@ -84,7 +84,7 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
       </SubPanel>
 
       <div className="flex flex-col gap-4">
-        <SubPanel title="DATA & PRIVACY (P2)" icon={<span>🗄️</span>}>
+        <SubPanel title="DATA & PRIVACY (P2)" icon={<ArchiveIcon />}>
           <div className="flex flex-col gap-3">
             <Row label="Clear Quiz History">
               <button
@@ -109,7 +109,7 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
           </div>
         </SubPanel>
 
-        <SubPanel title="ACCOUNT (P2)" icon={<span>🔑</span>}>
+        <SubPanel title="ACCOUNT (P2)" icon={<KeyIcon />}>
           <div className="flex flex-col gap-3">
             <Row label="Change Password">
               <button type="button" className="btn-pixel btn-8bit btn-ghost !py-2 !text-[9px]">
@@ -134,7 +134,7 @@ export function SettingsForm({ profile }: { profile: SettingsProfile }) {
           </div>
         </SubPanel>
 
-        <SubPanel title="ABOUT" icon={<span>ℹ️</span>}>
+        <SubPanel title="ABOUT" icon={<InfoIcon />}>
           <div className="text-pixel flex justify-between text-[10px] tracking-wide text-[#b7b2e6]">
             <span>Version</span>
             <span className="text-white">v1.0.0</span>

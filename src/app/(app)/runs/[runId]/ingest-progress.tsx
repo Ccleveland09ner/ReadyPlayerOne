@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
+import { Check, Play } from "@/components/ui/Icons";
 import type { IngestStage, StageDetail } from "@/lib/types";
 
 const STAGES: { id: IngestStage; label: string; detail: (s: StageDetail) => string }[] = [
@@ -143,11 +144,11 @@ export function IngestProgress({
               }
             >
               <span className="text-pixel text-lg" style={{ color: done ? "var(--color-lime)" : active ? "#fff" : "#5a5588" }}>
-                {done ? "✓" : active ? "▶" : "·"}
+                {done ? <Check /> : active ? <Play /> : <span className="inline-block h-2 w-2 bg-current align-middle" />}
               </span>
               <span className="flex-1">
                 <span className="text-pixel block text-[11px] text-white">{stage.label}</span>
-                <span className="text-display mt-1 block text-sm text-[#b7b2e6]">
+                <span className="text-pixel mt-2 block text-[10px] leading-relaxed text-[#b7b2e6]">
                   {done || active ? stage.detail(detail) : "waiting"}
                 </span>
               </span>
@@ -169,11 +170,11 @@ export function IngestProgress({
 
       {error ? (
         <div className="mt-7 text-center">
-          <p className="text-display text-base font-medium text-[#ff5470]">{error}</p>
+          <p className="text-pixel text-[10px] leading-relaxed text-[#ff5470]">{error}</p>
           <button
             type="button"
             onClick={() => router.push("/home")}
-            className="btn-pixel btn-ghost mt-4"
+            className="btn-pixel btn-8bit btn-ghost mt-4"
           >
             TRY ANOTHER REPOSITORY
           </button>

@@ -1,15 +1,12 @@
-import type { CSSProperties } from "react";
 import { PlayerSprite } from "@/components/ui/Brand";
-import { BranchIcon, ChevronDown } from "@/components/ui/Icons";
+import { RepoSelector, type RecentRepo } from "@/components/shell/RepoSelector";
 import { progressionFor } from "@/lib/progression/mastery";
 
 /**
  * Repository selector on the left, player card on the right.
  *
- * TODO: the selector is a static button until the repo dropdown lands — it
- * should list previously used repos and read "Select a repository…" when the
- * player has none. The player numbers are derived (never stored); they come
- * from src/lib/progression once the answers table exists.
+ * The player numbers are derived, never stored — they come straight from this
+ * player's answer rows, so deleting a run corrects them for free.
  */
 export function TopBar({
   owner,
@@ -17,42 +14,21 @@ export function TopBar({
   username,
   correct,
   quizzes,
+  recent,
 }: {
   owner: string | null;
   repo: string | null;
   username: string;
   correct: number;
   quizzes: number;
+  recent: RecentRepo[];
 }) {
   const { level, xpIntoLevel, xpForLevel } = progressionFor({ correct, quizzes });
   const pct = Math.round((xpIntoLevel / xpForLevel) * 100);
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 px-3 py-4 lg:px-6">
-      <button
-        type="button"
-        className="box-8bit flex min-w-[220px] items-center gap-3 px-4 py-3 text-left transition hover:brightness-105 sm:min-w-[340px]"
-        style={
-          {
-            "--box-bg": "var(--color-parchment)",
-            "--box-edge": "#c2c6e2",
-            "--box-hi": "rgba(255,255,255,0.85)",
-            "--box-lo": "rgba(0,0,0,0.12)",
-          } as CSSProperties
-        }
-      >
-        <BranchIcon className="text-xl text-[#5b3fd6]" />
-        <span className="text-pixel text-ink flex-1 text-[11px] tracking-wide">
-          {repo ? (
-            <>
-              <span style={{ color: "#7b76ad" }}>{owner}</span> / {repo}
-            </>
-          ) : (
-            <span style={{ color: "#7b76ad" }}>Select a repository…</span>
-          )}
-        </span>
-        <ChevronDown className="text-lg text-[#6f68a8]" />
-      </button>
+      <RepoSelector owner={owner} repo={repo} recent={recent} />
 
       <div className="flex items-center gap-3">
         <PlayerSprite size={44} />

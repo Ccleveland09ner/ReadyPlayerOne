@@ -76,7 +76,7 @@ export default async function CompletePage({ params }: PageProps<"/runs/[runId]/
         </SubPanel>
 
         <SubPanel title="TOPICS COVERED">
-          <ul className="text-display grid gap-1.5 text-base text-[#cbc6f0]">
+          <ul className="text-pixel grid gap-2.5 text-[10px] text-[#cbc6f0]">
             {TOPIC_ORDER.map((topic) => (
               <li key={topic} className="flex items-center justify-between">
                 <span>{TOPIC_LABELS[topic]}</span>
@@ -90,14 +90,14 @@ export default async function CompletePage({ params }: PageProps<"/runs/[runId]/
       </div>
 
       <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-        <Link href={`/runs/${runId}/answers`} className="btn-pixel btn-grape">
+        <Link href={`/runs/${runId}/answers`} className="btn-pixel btn-8bit btn-grape">
           VIEW ANSWERS
         </Link>
         {/* TODO: Try Again creates a new run against the cached snapshot. */}
-        <Link href={`/runs/${runId}/start`} className="btn-pixel btn-ghost">
+        <Link href={`/runs/${runId}/start`} className="btn-pixel btn-8bit btn-ghost">
           TRY AGAIN
         </Link>
-        <Link href="/home" className="btn-pixel btn-gold">
+        <Link href="/home" className="btn-pixel btn-8bit btn-gold">
           BACK HOME
         </Link>
       </div>

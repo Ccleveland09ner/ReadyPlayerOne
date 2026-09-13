@@ -24,8 +24,8 @@ export default async function StartPage({ params }: PageProps<"/runs/[runId]/sta
   return (
     <Panel tone="light" className="max-w-3xl p-8 sm:p-10">
       <div className="text-ink text-center">
-        <h1 className="text-display text-4xl font-bold sm:text-5xl">Would you kindly...</h1>
-        <p className="text-display text-4xl font-bold text-[#6d4aff] sm:text-5xl">start?</p>
+        <h1 className="text-pixel text-lg leading-[1.6] sm:text-2xl sm:leading-[1.6]">Would you kindly...</h1>
+        <p className="text-pixel mt-2 text-lg text-[#6d4aff] sm:text-2xl">start?</p>
       </div>
 
       <div
@@ -54,17 +54,17 @@ export default async function StartPage({ params }: PageProps<"/runs/[runId]/sta
             >
               <Icon />
             </span>
-            <span className="text-display w-32 text-lg font-semibold text-[#43406b]">{label}</span>
-            <span className="text-display text-ink flex-1 truncate text-lg font-medium">{value}</span>
+            <span className="text-pixel w-32 text-[10px] leading-relaxed text-[#43406b]">{label}</span>
+            <span className="text-pixel text-ink flex-1 truncate text-[10px]">{value}</span>
           </div>
         ))}
       </div>
 
       <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-        <Link href="/home" className="btn-pixel btn-ghost-light">
+        <Link href="/home" className="btn-pixel btn-8bit btn-ghost-light">
           CHANGE REPOSITORY
         </Link>
-        <Link href={`/runs/${runId}`} className="btn-pixel btn-gold">
+        <Link href={`/runs/${runId}`} className="btn-pixel btn-8bit btn-gold">
           START QUIZ <Play className="text-xs" />
         </Link>
       </div>

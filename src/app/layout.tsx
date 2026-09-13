@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
-import { Fredoka, Nunito, Press_Start_2P } from "next/font/google";
+import { Nunito, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
-// Two faces in the art direction (pixel display + body), plus the rounded
-// display face the reconstruction uses for headings and option text.
+// Two faces: the pixel face carries every heading, label and line of prose
+// the screens actually show, and the body face is the fallback for anything
+// long-form. The rounded display face the first pass used for headings and
+// option text is gone -- those are pixel-set now, so nothing loaded it.
 const pressStart = Press_Start_2P({
   variable: "--font-press-start",
   weight: "400",
-  subsets: ["latin"],
-});
-
-const fredoka = Fredoka({
-  variable: "--font-fredoka",
   subsets: ["latin"],
 });
 
@@ -30,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${pressStart.variable} ${fredoka.variable} ${nunito.variable} h-full`}
+      className={`${pressStart.variable} ${nunito.variable} h-full`}
     >
       <body className="min-h-full">{children}</body>
     </html>

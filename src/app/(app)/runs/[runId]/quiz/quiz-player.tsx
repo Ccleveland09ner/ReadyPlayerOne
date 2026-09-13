@@ -118,7 +118,7 @@ export function QuizPlayer({
         <p className="text-pixel mt-5 text-[10px] tracking-wide text-[#7b76ad]">
           {TOPIC_LABELS[question.topic].toUpperCase()}
         </p>
-        <h2 className="text-display text-ink mt-2 text-3xl leading-tight font-bold sm:text-4xl">
+        <h2 className="text-pixel text-ink mt-3 text-base leading-[1.7] sm:text-lg sm:leading-[1.7]">
           {question.prompt}
         </h2>
 
@@ -170,7 +170,7 @@ export function QuizPlayer({
                 }
               >
                 <span
-                  className="chip-8bit text-display flex h-11 w-11 items-center justify-center text-xl font-bold"
+                  className="chip-8bit text-pixel flex h-11 w-11 items-center justify-center text-base"
                   style={
                     {
                       "--chip-bg": badge,
@@ -181,21 +181,23 @@ export function QuizPlayer({
                 >
                   {option.label}
                 </span>
-                <span className="text-display text-ink text-xl font-semibold">{option.text}</span>
+                <span className="text-pixel text-ink text-[11px] leading-[1.9] sm:text-xs sm:leading-[1.9]">
+                  {option.text}
+                </span>
               </button>
             );
           })}
         </div>
 
         {error ? (
-          <p className="text-display mt-4 text-base font-medium text-[#c0392b]">{error}</p>
+          <p className="text-pixel mt-4 text-[10px] leading-relaxed text-[#c0392b]">{error}</p>
         ) : null}
 
         <div className="mt-6 flex items-center justify-between gap-4">
           {/* TODO (P2): reveal the grounding file path without the answer. */}
           <button
             type="button"
-            className="text-display flex items-center gap-2 text-lg font-semibold text-[#6d4aff] transition hover:text-[#4a2fc0]"
+            className="text-pixel flex items-center gap-2 text-[10px] text-[#6d4aff] transition hover:text-[#4a2fc0]"
           >
             <Bulb /> Need a hint?
           </button>
@@ -203,7 +205,7 @@ export function QuizPlayer({
             type="button"
             onClick={result ? next : submit}
             disabled={picked === null || submitting}
-            className="btn-pixel btn-gold disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-pixel btn-8bit btn-gold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting
               ? "CHECKING…"

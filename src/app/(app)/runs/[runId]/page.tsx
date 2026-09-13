@@ -34,7 +34,7 @@ export default async function RunPage({ params }: PageProps<"/runs/[runId]">) {
       </div>
 
       {run.status === "failed" ? (
-        <p className="text-display mt-8 text-center text-base font-medium text-[#ff5470]">
+        <p className="text-pixel mt-8 text-center text-[10px] leading-relaxed text-[#ff5470]">
           {run.error ?? "This run failed."}
         </p>
       ) : (

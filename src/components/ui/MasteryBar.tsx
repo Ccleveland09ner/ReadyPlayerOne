@@ -35,7 +35,7 @@ export function MasteryBar({
           />
         ))}
       </div>
-      <p className="text-display mt-3 text-sm text-[#b7b2e6]">{tier.blurb}</p>
+      <p className="text-pixel mt-3 text-[10px] leading-relaxed text-[#b7b2e6]">{tier.blurb}</p>
     </div>
   );
 }

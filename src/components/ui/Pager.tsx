@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Arrow } from "@/components/ui/Icons";
 import type { CSSProperties } from "react";
 
 /** Offset pagination controls for /history — `?page=n`, 10 rows per page. */
@@ -32,7 +33,7 @@ export function Pager({
         style={page <= 1 ? disabled : enabled}
         aria-disabled={page <= 1}
       >
-        ◀ PREV
+        <Arrow className="mr-1 -scale-x-100" /> PREV
       </Link>
       <span className="text-pixel text-[10px] text-[#8fa0e6]">
         PAGE {page} / {pageCount}
@@ -43,7 +44,7 @@ export function Pager({
         style={page >= pageCount ? disabled : enabled}
         aria-disabled={page >= pageCount}
       >
-        NEXT ▶
+        NEXT <Arrow className="ml-1" />
       </Link>
     </div>
   );
